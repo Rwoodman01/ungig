@@ -6,8 +6,9 @@ export const APP_TAGLINE = 'Escape the 9 to 5.';
 
 // Admins are bootstrapped by email. This list is mirrored in firestore.rules.
 // Swap to Firebase custom claims in phase 2 when the auth flow matures.
-export const ADMIN_EMAILS = [rwoodman01@gmail.com
-  // 'michael@ungig.app',
+export const ADMIN_EMAILS = [
+  'rwoodman01@gmail.com',
+  'michael.whitaker1490@gmail.com',
 ];
 
 export const MEMBER_STATUS = Object.freeze({

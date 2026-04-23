@@ -26,7 +26,8 @@ service cloud.firestore {
         && request.auth.token.email != null
         && request.auth.token.email.lower() in [
           // Keep in sync with src/lib/constants.js ADMIN_EMAILS.
-          // 'michael@ungig.app'
+          'rwoodman01@gmail.com',
+          'michael.whitaker1490@gmail.com',
         ];
     }
 

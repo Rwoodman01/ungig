@@ -10,8 +10,9 @@ import { deflateSync } from 'node:zlib';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ICONS_DIR = resolve(__dirname, '..', 'public', 'icons');
 
-const NAVY = [0x0b, 0x1b, 0x2b]; // #0b1b2b
-const GOLD = [0xd4, 0xa8, 0x5a]; // #d4a85a
+// Brand palette — jet black background, silver glyph.
+const JET = [0x0d, 0x0d, 0x0f];    // #0D0D0F
+const SILVER = [0xd5, 0xd7, 0xdc]; // #D5D7DC
 
 function crc32(buf) {
   let c;
@@ -64,7 +65,7 @@ function makePng(size, { maskable = false } = {}) {
   for (let y = 0; y < h; y++) {
     raw[y * rowStride] = 0;
     for (let x = 0; x < w; x++) {
-      let color = NAVY;
+      let color = JET;
       const gy = Math.floor((y - glyphStartY) / cell);
       const gx = Math.floor((x - glyphStartX) / cell);
       if (
@@ -72,7 +73,7 @@ function makePng(size, { maskable = false } = {}) {
         gx >= 0 && gx < U_GLYPH[0].length &&
         U_GLYPH[gy][gx] === 1
       ) {
-        color = GOLD;
+        color = SILVER;
       }
       const off = y * rowStride + 1 + x * 3;
       raw[off] = color[0];

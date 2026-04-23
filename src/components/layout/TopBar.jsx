@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { APP_NAME } from '../../lib/constants.js';
+import Wordmark from '../brand/Wordmark.jsx';
 
 export default function TopBar({ title, showBack = false }) {
   const location = useLocation();
@@ -8,7 +8,7 @@ export default function TopBar({ title, showBack = false }) {
 
   return (
     <header
-      className="sticky top-0 z-30 bg-navy-950/90 backdrop-blur border-b border-navy-800"
+      className="sticky top-0 z-30 bg-jet/90 backdrop-blur border-b border-steel-700"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="max-w-app mx-auto flex items-center gap-2 px-4 h-14">
@@ -24,8 +24,14 @@ export default function TopBar({ title, showBack = false }) {
             </svg>
           </button>
         ) : null}
-        <Link to="/" className="font-display text-xl font-bold text-gold-400">
-          {title ?? APP_NAME}
+        <Link to="/" className="flex items-center">
+          {title ? (
+            <span className="font-display tracking-brand uppercase text-silver text-xl">
+              {title}
+            </span>
+          ) : (
+            <Wordmark size="md" />
+          )}
         </Link>
       </div>
     </header>

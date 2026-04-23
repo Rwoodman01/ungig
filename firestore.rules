@@ -37,9 +37,16 @@ service cloud.firestore {
       return [
         'displayName', 'email', 'photoURL', 'bio', 'location',
         'talentsOffered', 'servicesNeeded', 'proofPhotos',
+        'welcomeSeen',
         'subscriptionActive', 'paidAt',
         'bgCheckConfirmed', 'bgCheckDate',
-        'profileComplete', 'referredBy',
+        'standardsAgreed', 'standardsAgreedAt',
+        'profileComplete',
+        'referredBy',
+        // `status` flips to 'pending' when the application is submitted.
+        // Anything beyond 'pending' (approved/rejected) is admin-only —
+        // we keep that control in the update condition below.
+        'status', 'applicationSubmittedAt',
         'updatedAt',
       ];
     }
@@ -55,11 +62,21 @@ service cloud.firestore {
         && request.resource.data.tradeCount == 0
         && request.resource.data.badges.size() == 0;
 
+      // Self-update: whitelist of fields + members can only move their own
+      // `status` from 'unpaid' -> 'pending' (the application submission).
+      // Admins can change status freely.
       allow update: if isAdmin()
         || (
           isSelf(uid)
           && request.resource.data.diff(resource.data).affectedKeys()
                .hasOnly(selfUpdatableFields())
+          && (
+            request.resource.data.status == resource.data.status
+            || (
+              resource.data.status == 'unpaid'
+              && request.resource.data.status == 'pending'
+            )
+          )
         );
 
       allow delete: if isAdmin();

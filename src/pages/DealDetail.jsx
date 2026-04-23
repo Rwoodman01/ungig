@@ -15,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import Spinner from '../components/ui/Spinner.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
+import LockedAction from '../components/ui/LockedAction.jsx';
 import MessageThread from '../components/deals/MessageThread.jsx';
 import ReviewForm from '../components/deals/ReviewForm.jsx';
 import { DEAL_STATUS } from '../lib/constants.js';
@@ -35,7 +36,7 @@ function StatusPill({ status }) {
 
 export default function DealDetail() {
   const { dealId } = useParams();
-  const { user } = useAuth();
+  const { user, canEngage } = useAuth();
   const [dealSnap, loading, error] = useDocument(doc(db, 'deals', dealId));
   const [other, setOther] = useState(null);
   const [savingField, setSavingField] = useState('');
@@ -84,15 +85,17 @@ export default function DealDetail() {
     return <EmptyState title="Not authorized" description="This trade is private." />;
   }
 
-  const canAcceptDecline = !iAmInitiator && deal.status === DEAL_STATUS.REQUESTED;
-  const canSchedule =
-    deal.status === DEAL_STATUS.ACCEPTED || deal.status === DEAL_STATUS.SCHEDULED;
-  const canMarkComplete =
-    (deal.status === DEAL_STATUS.ACCEPTED || deal.status === DEAL_STATUS.SCHEDULED) &&
-    !iMarkedComplete;
-  const canReview =
-    (deal.status === DEAL_STATUS.COMPLETED || deal.status === DEAL_STATUS.REVIEWED) &&
-    !iAlreadyReviewed;
+  // Engagement actions (accept/decline, schedule, complete, review) all
+  // require approved status — pending members see a soft lock instead.
+  const canAcceptDecline = canEngage && !iAmInitiator && deal.status === DEAL_STATUS.REQUESTED;
+  const canSchedule = canEngage
+    && (deal.status === DEAL_STATUS.ACCEPTED || deal.status === DEAL_STATUS.SCHEDULED);
+  const canMarkComplete = canEngage
+    && (deal.status === DEAL_STATUS.ACCEPTED || deal.status === DEAL_STATUS.SCHEDULED)
+    && !iMarkedComplete;
+  const canReview = canEngage
+    && (deal.status === DEAL_STATUS.COMPLETED || deal.status === DEAL_STATUS.REVIEWED)
+    && !iAlreadyReviewed;
 
   const saveMyService = async () => {
     setSavingField(myServiceField);
@@ -145,6 +148,13 @@ export default function DealDetail() {
         </div>
       ) : null}
 
+      {!canEngage ? (
+        <LockedAction>
+          You can read this trade. Engagement actions unlock once your
+          culture call is complete.
+        </LockedAction>
+      ) : null}
+
       <section className="card p-4 space-y-2">
         <h2 className="text-sm font-semibold text-ink-50">Your offer</h2>
         <textarea
@@ -153,9 +163,10 @@ export default function DealDetail() {
           value={myService}
           onChange={(e) => setMyService(e.target.value)}
           onBlur={saveMyService}
+          disabled={!canEngage}
         />
         <div className="text-xs text-ink-300">
-          {savingField === myServiceField ? 'Saving...' : 'Saved on blur.'}
+          {savingField === myServiceField ? 'Saving...' : canEngage ? 'Saved on blur.' : 'Locked until approval.'}
         </div>
 
         <div className="pt-3 mt-3 border-t border-navy-800">

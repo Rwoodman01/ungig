@@ -8,7 +8,7 @@ import { useAuth } from '../../contexts/AuthContext.jsx';
 import { timeAgo } from '../../lib/format.js';
 
 export default function MessageThread({ dealId }) {
-  const { user } = useAuth();
+  const { user, canEngage } = useAuth();
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const scrollRef = useRef(null);
@@ -74,18 +74,24 @@ export default function MessageThread({ dealId }) {
           );
         })}
       </div>
-      <form onSubmit={send} className="flex gap-2 p-2 border-t border-navy-800">
-        <input
-          className="input flex-1"
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Type a message..."
-          maxLength={1000}
-        />
-        <button className="btn-primary px-4" disabled={!draft.trim() || sending}>
-          Send
-        </button>
-      </form>
+      {canEngage ? (
+        <form onSubmit={send} className="flex gap-2 p-2 border-t border-navy-800">
+          <input
+            className="input flex-1"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Type a message..."
+            maxLength={1000}
+          />
+          <button className="btn-primary px-4" disabled={!draft.trim() || sending}>
+            Send
+          </button>
+        </form>
+      ) : (
+        <div className="p-3 border-t border-navy-800 text-center text-xs text-gold-200/80">
+          🤝 Messaging unlocks once your culture call is complete.
+        </div>
+      )}
     </div>
   );
 }

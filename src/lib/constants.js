@@ -2,7 +2,20 @@
 // Keep enums and allowlists here so components don't invent their own strings.
 
 export const APP_NAME = 'Ungig';
-export const APP_TAGLINE = 'Escape the 9 to 5.';
+// Brand tagline — shown on Landing, Welcome, and marketing surfaces.
+export const APP_TAGLINE = 'Exchange value • Build together • Create a way out';
+// Footer stamp on every auth screen, per brand guide.
+export const AUTH_FOOTER_LINE = 'Escape ordinary. Build extraordinary.';
+
+// Brand essence — used to inform microcopy.
+// Victory · Freedom · Growth · Community · Trust
+export const BRAND_PILLARS = Object.freeze([
+  { key: 'victory',   label: 'Victory',   copy: 'Win on your own terms.' },
+  { key: 'freedom',   label: 'Freedom',   copy: "There's a way out — and a better way forward." },
+  { key: 'growth',    label: 'Growth',    copy: 'Real progress. Real potential. No ceiling.' },
+  { key: 'community', label: 'Community', copy: 'Build together. Stronger together.' },
+  { key: 'trust',     label: 'Trust',     copy: 'Real value. Real opportunities. Real change.' },
+]);
 
 // Admins are bootstrapped by email. This list is mirrored in firestore.rules.
 // Swap to Firebase custom claims in phase 2 when the auth flow matures.

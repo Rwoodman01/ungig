@@ -1,14 +1,16 @@
-// StatusGate — implements the onboarding state machine.
-// Reads the current users/{uid} doc and decides where to send the user next.
+// StatusGate — routes new members through the 3-step onboarding flow and
+// then drops them into the app, regardless of approval status.
 //
 // Flow:
-//   no doc / not signed in   -> caller handles (ProtectedRoute upstream)
-//   subscriptionActive=false -> /onboarding/payment
-//   status=pending           -> /onboarding/pending
-//   status=rejected          -> /onboarding/rejected
-//   bgCheckConfirmed=false   -> /onboarding/background-check
-//   profileComplete=false    -> /onboarding/profile
-//   otherwise                -> render children (<Outlet/>)
+//   1. Welcome   (/onboarding/welcome)        until welcomeSeen
+//   2. Application (/onboarding/application)  until status moves off 'unpaid'
+//   3. Profile   (/onboarding/profile)        until profileComplete
+//   -> Main app (read-only until status === 'approved')
+//
+// "Pending" is NOT a blocking wall anymore — pending members land in the app
+// with engagement actions softly locked. Only "rejected" still redirects.
+//
+// Admins bypass onboarding entirely.
 
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext.jsx';
@@ -16,30 +18,28 @@ import Spinner from '../ui/Spinner.jsx';
 import { MEMBER_STATUS } from '../../lib/constants.js';
 
 const ONBOARDING_PATHS = new Set([
-  '/onboarding/payment',
-  '/onboarding/pending',
-  '/onboarding/rejected',
-  '/onboarding/background-check',
+  '/onboarding/welcome',
+  '/onboarding/application',
   '/onboarding/profile',
+  '/onboarding/rejected',
 ]);
 
-function decideDestination(userDoc) {
-  if (!userDoc.subscriptionActive) return '/onboarding/payment';
-  if (userDoc.status === MEMBER_STATUS.PENDING) return '/onboarding/pending';
+function decideDestination(userDoc, { isAdmin }) {
+  if (isAdmin) return null;
   if (userDoc.status === MEMBER_STATUS.REJECTED) return '/onboarding/rejected';
-  if (userDoc.status !== MEMBER_STATUS.APPROVED) return '/onboarding/pending';
-  if (!userDoc.bgCheckConfirmed) return '/onboarding/background-check';
+  if (!userDoc.welcomeSeen) return '/onboarding/welcome';
+  if (userDoc.status === MEMBER_STATUS.UNPAID) return '/onboarding/application';
   if (!userDoc.profileComplete) return '/onboarding/profile';
-  return null; // fully onboarded
+  return null;
 }
 
 export default function StatusGate() {
-  const { userDoc, loading } = useAuth();
+  const { userDoc, isAdmin, loading } = useAuth();
   const location = useLocation();
 
   if (loading || !userDoc) return <Spinner label="Checking your status..." />;
 
-  const destination = decideDestination(userDoc);
+  const destination = decideDestination(userDoc, { isAdmin });
   const onOnboarding = ONBOARDING_PATHS.has(location.pathname);
 
   // Fully onboarded but visiting an onboarding page -> send home.

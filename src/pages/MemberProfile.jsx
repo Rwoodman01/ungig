@@ -10,6 +10,7 @@ import Avatar from '../components/ui/Avatar.jsx';
 import Badge from '../components/ui/Badge.jsx';
 import Spinner from '../components/ui/Spinner.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
+import LockedAction from '../components/ui/LockedAction.jsx';
 import { formatDate } from '../lib/format.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { createDeal } from '../lib/deals.js';
@@ -26,7 +27,7 @@ function Stars({ rating }) {
 export default function MemberProfile() {
   const { memberId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, canEngage } = useAuth();
   const [memberSnap, loading] = useDocument(doc(db, 'users', memberId));
 
   const reviewsQuery = useMemo(
@@ -153,14 +154,19 @@ export default function MemberProfile() {
         )}
       </section>
 
-      {!isSelf ? (
+      {isSelf ? (
+        <Link to="/me" className="btn-secondary w-full">
+          Edit your profile
+        </Link>
+      ) : canEngage ? (
         <button className="btn-primary w-full" onClick={requestTrade}>
           Request a Trade
         </button>
       ) : (
-        <Link to="/me" className="btn-secondary w-full">
-          Edit your profile
-        </Link>
+        <LockedAction>
+          <strong className="text-gold-300">Request a Trade</strong>
+          {' '}unlocks once your culture call is complete.
+        </LockedAction>
       )}
     </div>
   );

@@ -32,7 +32,7 @@ const AdminIcon = (p) => (
 );
 
 const baseItem =
-  'flex-1 flex flex-col items-center justify-center gap-1 py-2 text-xs text-ink-300';
+  'flex-1 flex flex-col items-center justify-center gap-1 py-2 text-[11px] tracking-brand uppercase text-silver-300 font-medium';
 
 function Item({ to, label, Icon, end }) {
   return (
@@ -40,7 +40,7 @@ function Item({ to, label, Icon, end }) {
       to={to}
       end={end}
       className={({ isActive }) =>
-        clsx(baseItem, isActive && 'text-gold-400')
+        clsx(baseItem, isActive && 'text-lilac')
       }
     >
       <Icon className="h-6 w-6" />
@@ -52,7 +52,7 @@ function Item({ to, label, Icon, end }) {
 export default function BottomNav({ isAdmin }) {
   return (
     <nav
-      className="sticky bottom-0 z-30 bg-navy-900/95 backdrop-blur border-t border-navy-800"
+      className="sticky bottom-0 z-30 bg-charcoal/95 backdrop-blur border-t border-steel-700"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="max-w-app mx-auto flex">

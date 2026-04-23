@@ -1,17 +1,21 @@
-// Onboarding final step: complete profile.
+// Onboarding step 3: complete profile.
 // Collects the minimum fields the directory and deal flows rely on.
-// Marks `profileComplete=true` so StatusGate finally lets them into the app.
+// After save, StatusGate drops the user straight into the app (read-only
+// until approved). No more "pending approval" wall.
 
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import PhotoUploader from '../../components/ui/PhotoUploader.jsx';
 import TagInput from '../../components/ui/TagInput.jsx';
+import ProgressBar from '../../components/onboarding/ProgressBar.jsx';
 import { LIMITS } from '../../lib/constants.js';
 
 export default function ProfileSetup() {
   const { user, userDoc } = useAuth();
+  const navigate = useNavigate();
   const [displayName, setDisplayName] = useState(userDoc?.displayName ?? '');
   const [bio, setBio] = useState(userDoc?.bio ?? '');
   const [location, setLocation] = useState(userDoc?.location ?? '');
@@ -45,6 +49,8 @@ export default function ProfileSetup() {
         profileComplete: true,
         updatedAt: serverTimestamp(),
       });
+      // Drop them straight into the app — no interruption screen.
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err.message ?? 'Could not save profile.');
     } finally {
@@ -53,13 +59,15 @@ export default function ProfileSetup() {
   };
 
   return (
-    <div className="screen px-6 py-8">
-      <h1 className="text-2xl font-display font-bold text-gold-400">
-        Set up your profile
-      </h1>
-      <p className="text-sm text-ink-300 mt-1">
-        This is how other members will discover and trust you.
-      </p>
+    <div className="min-h-full flex flex-col">
+      <ProgressBar currentStep="profile" />
+      <div className="screen px-6 py-4">
+        <h1 className="text-2xl font-display font-bold text-gold-400">
+          Set up your profile
+        </h1>
+        <p className="text-sm text-ink-300 mt-1">
+          This is how other members will discover and trust you.
+        </p>
 
       <form onSubmit={save} className="mt-6 space-y-6">
         <PhotoUploader
@@ -141,9 +149,10 @@ export default function ProfileSetup() {
         {error ? <p className="text-red-400 text-sm">{error}</p> : null}
 
         <button className="btn-primary w-full" disabled={!canSubmit || busy}>
-          {busy ? 'Saving...' : 'Finish setup'}
+          {busy ? 'Saving...' : 'Save my profile'}
         </button>
       </form>
+      </div>
     </div>
   );
 }

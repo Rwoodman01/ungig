@@ -11,7 +11,7 @@ import Badge from '../components/ui/Badge.jsx';
 import PhotoUploader from '../components/ui/PhotoUploader.jsx';
 import TagInput from '../components/ui/TagInput.jsx';
 import { formatDate } from '../lib/format.js';
-import { LIMITS } from '../lib/constants.js';
+import { LIMITS, MEMBER_STATUS } from '../lib/constants.js';
 
 export default function MyProfile() {
   const { user, userDoc, signOutUser } = useAuth();
@@ -37,6 +37,11 @@ export default function MyProfile() {
           <p className="text-xs text-ink-300 mt-1">
             Member since {formatDate(userDoc.memberSince)}
           </p>
+          {userDoc.status === MEMBER_STATUS.PENDING ? (
+            <span className="chip-gold text-[10px] mt-2">
+              Awaiting culture call
+            </span>
+          ) : null}
           <div className="mt-2 flex gap-3 text-xs text-ink-100">
             <span><strong className="text-gold-400">{userDoc.tradeCount ?? 0}</strong> trades</span>
             <span><strong className="text-gold-400">{userDoc.badges?.length ?? 0}</strong> badges</span>

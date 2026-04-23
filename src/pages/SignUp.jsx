@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
-import { APP_NAME } from '../lib/constants.js';
+import Wordmark from '../components/brand/Wordmark.jsx';
+import AuthFooter from '../components/brand/AuthFooter.jsx';
 
 export default function SignUp() {
   const { user, signUpWithEmail, signInWithGoogle } = useAuth();
@@ -48,11 +49,10 @@ export default function SignUp() {
 
   return (
     <div className="screen px-6 py-10">
-      <h1 className="text-3xl font-display font-bold text-gold-400">
-        Join {APP_NAME}
-      </h1>
-      <p className="text-ink-300 mt-1 text-sm">
-        Sign up to request membership.
+      <Wordmark size="lg" />
+      <h1 className="text-3xl mt-4 text-silver">Start your escape</h1>
+      <p className="text-silver-300 mt-1 text-sm">
+        Create your account to request membership.
       </p>
 
       <form onSubmit={handleEmail} className="mt-8 space-y-3">
@@ -104,12 +104,14 @@ export default function SignUp() {
         Continue with Google
       </button>
 
-      <p className="mt-8 text-center text-sm text-ink-300">
+      <p className="mt-8 text-center text-sm text-silver-300">
         Already a member?{' '}
-        <Link to="/signin" className="text-gold-400 font-medium">
+        <Link to="/signin" className="text-lilac font-medium">
           Sign in
         </Link>
       </p>
+
+      <AuthFooter className="mt-10" />
     </div>
   );
 }

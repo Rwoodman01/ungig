@@ -47,9 +47,11 @@ function initialUserDoc(user) {
     servicesNeeded: [],
     proofPhotos: [],
     status: MEMBER_STATUS.UNPAID,
+    welcomeSeen: false,
     subscriptionActive: false,
     bgCheckConfirmed: false,
     bgCheckDate: null,
+    standardsAgreed: false,
     profileComplete: false,
     memberSince: serverTimestamp(),
     badges: [],
@@ -145,20 +147,25 @@ export function AuthProvider({ children }) {
     await signOut(auth);
   }, []);
 
-  const value = useMemo(
-    () => ({
+  const value = useMemo(() => {
+    const isAdmin = userDoc?.role === 'admin' || isAdminEmail(user?.email);
+    // `canEngage` controls whether a member can create deals, message, or
+    // take action on someone else's profile. Admins always can; everyone
+    // else must be fully approved. Gate your engagement buttons on this.
+    const canEngage = isAdmin || userDoc?.status === MEMBER_STATUS.APPROVED;
+    return {
       user,
       userDoc,
       loading: authLoading || docLoading,
-      isAdmin: userDoc?.role === 'admin' || isAdminEmail(user?.email),
+      isAdmin,
+      canEngage,
       signInWithGoogle,
       signUpWithEmail,
       signInWithEmail,
       resetPassword,
       signOutUser,
-    }),
-    [user, userDoc, authLoading, docLoading, signInWithGoogle, signUpWithEmail, signInWithEmail, resetPassword, signOutUser],
-  );
+    };
+  }, [user, userDoc, authLoading, docLoading, signInWithGoogle, signUpWithEmail, signInWithEmail, resetPassword, signOutUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

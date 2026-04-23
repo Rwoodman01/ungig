@@ -27,9 +27,9 @@ export default defineConfig({
       manifest: {
         name: 'Ungig',
         short_name: 'Ungig',
-        description: 'Ungig — Escape the 9 to 5. A trust-based service-barter marketplace.',
-        theme_color: '#0b1b2b',
-        background_color: '#0b1b2b',
+        description: 'Ungig — Exchange value. Build together. Create a way out.',
+        theme_color: '#0D0D0F',
+        background_color: '#0D0D0F',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',

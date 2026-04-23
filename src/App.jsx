@@ -15,10 +15,9 @@ import Landing from './pages/Landing.jsx';
 import SignIn from './pages/SignIn.jsx';
 import SignUp from './pages/SignUp.jsx';
 
-import Payment from './pages/onboarding/Payment.jsx';
-import CultureCallPending from './pages/onboarding/CultureCallPending.jsx';
+import Welcome from './pages/onboarding/Welcome.jsx';
+import Application from './pages/onboarding/Application.jsx';
 import Rejected from './pages/onboarding/Rejected.jsx';
-import BackgroundCheck from './pages/onboarding/BackgroundCheck.jsx';
 import ProfileSetup from './pages/onboarding/ProfileSetup.jsx';
 
 import Home from './pages/Home.jsx';
@@ -64,11 +63,12 @@ export default function App() {
         <>
           {/* Onboarding (authed, but not yet fully set up) */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/onboarding/payment" element={<Payment />} />
-            <Route path="/onboarding/pending" element={<CultureCallPending />} />
-            <Route path="/onboarding/rejected" element={<Rejected />} />
-            <Route path="/onboarding/background-check" element={<BackgroundCheck />} />
-            <Route path="/onboarding/profile" element={<ProfileSetup />} />
+            <Route element={<StatusGate />}>
+              <Route path="/onboarding/welcome" element={<Welcome />} />
+              <Route path="/onboarding/application" element={<Application />} />
+              <Route path="/onboarding/profile" element={<ProfileSetup />} />
+              <Route path="/onboarding/rejected" element={<Rejected />} />
+            </Route>
           </Route>
 
           {/* Fully onboarded — wrapped in AppShell chrome */}

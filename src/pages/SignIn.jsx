@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import Wordmark from '../components/brand/Wordmark.jsx';
+import AuthFooter from '../components/brand/AuthFooter.jsx';
 
 export default function SignIn() {
   const { user, signInWithEmail, signInWithGoogle, resetPassword } = useAuth();
@@ -65,10 +67,9 @@ export default function SignIn() {
 
   return (
     <div className="screen px-6 py-10">
-      <h1 className="text-3xl font-display font-bold text-gold-400">
-        Welcome back
-      </h1>
-      <p className="text-ink-300 mt-1 text-sm">Sign in to continue.</p>
+      <Wordmark size="lg" />
+      <h1 className="text-3xl mt-4 text-silver">Welcome back</h1>
+      <p className="text-silver-300 mt-1 text-sm">Sign in to continue.</p>
 
       <form onSubmit={handleEmail} className="mt-8 space-y-3">
         <input
@@ -118,12 +119,14 @@ export default function SignIn() {
         Continue with Google
       </button>
 
-      <p className="mt-8 text-center text-sm text-ink-300">
+      <p className="mt-8 text-center text-sm text-silver-300">
         New here?{' '}
-        <Link to="/signup" className="text-gold-400 font-medium">
+        <Link to="/signup" className="text-lilac font-medium">
           Create an account
         </Link>
       </p>
+
+      <AuthFooter className="mt-10" />
     </div>
   );
 }

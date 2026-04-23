@@ -1,0 +1,25 @@
+rules_version = '2';
+
+// Ungig Storage rules. Users own their own prefix; reads are public-ish
+// (any signed-in user) so profile photos and proof photos can render in
+// the directory.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    match /users/{uid}/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(uid)
+        && request.resource.size < 8 * 1024 * 1024   // 8 MB cap per upload
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if isOwner(uid);
+    }
+  }
+}

@@ -1,0 +1,74 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-navy-950 text-ink-100 font-sans antialiased;
+    /* Respect notches/home-indicator on iOS when installed as PWA. */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  h1, h2, h3 {
+    @apply font-display tracking-tight;
+  }
+
+  /* Remove default autofill blue on Chrome for dark theme. */
+  input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px #112a40 inset;
+    -webkit-text-fill-color: #e6eaf0;
+    caret-color: #e6eaf0;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3
+           font-medium transition active:scale-[0.98] disabled:opacity-50
+           disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-gold-500 text-navy-950 hover:bg-gold-400;
+  }
+  .btn-secondary {
+    @apply btn bg-navy-800 text-ink-100 hover:bg-navy-700
+           border border-navy-700;
+  }
+  .btn-ghost {
+    @apply btn text-ink-100 hover:bg-navy-800;
+  }
+
+  .input {
+    @apply w-full rounded-xl bg-navy-800 border border-navy-700
+           px-4 py-3 text-ink-50 placeholder:text-ink-300
+           focus:outline-none focus:ring-2 focus:ring-gold-500/60
+           focus:border-gold-500;
+  }
+
+  .card {
+    @apply bg-navy-900/80 border border-navy-800 rounded-xl2 shadow-card;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs
+           font-medium bg-navy-800 text-ink-100 border border-navy-700;
+  }
+  .chip-gold {
+    @apply chip bg-gold-500/10 text-gold-300 border-gold-500/30;
+  }
+
+  .screen {
+    @apply max-w-app mx-auto w-full min-h-full flex flex-col;
+  }
+}

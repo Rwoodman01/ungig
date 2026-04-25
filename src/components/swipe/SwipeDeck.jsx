@@ -1,7 +1,14 @@
+// SwipeDeck — stacks SwipeableCard instances and lets the top one be either
+// swiped (touch / mouse drag) or dispatched via the pass / like buttons.
+//
+// All animation and gesture handling is local — no external swipe library is
+// required, which avoids the missing-peer-dep crash we hit with
+// react-tinder-card.
+
 import { createRef, useEffect, useMemo, useState } from 'react';
-import TinderCard from 'react-tinder-card';
 import SwipeCard from './SwipeCard.jsx';
 import SwipeControls from './SwipeControls.jsx';
+import SwipeableCard from './SwipeableCard.jsx';
 import EmptyDeckState from './EmptyDeckState.jsx';
 
 export default function SwipeDeck({
@@ -11,27 +18,26 @@ export default function SwipeDeck({
   onDecision,
   onShowList,
 }) {
-  // Ensure arrays — guard against undefined during the first loading render.
   const safePrimary = Array.isArray(members) ? members : [];
   const safeRecycled = Array.isArray(recycledMembers) ? recycledMembers : [];
   const cards = safePrimary.length > 0 ? safePrimary : safeRecycled;
   const isRecycled = safePrimary.length === 0 && safeRecycled.length > 0;
 
-  // topIndex tracks which card is on top of the stack.
-  // Initialise lazily to -1 and let the effect sync once cards arrive.
   const [topIndex, setTopIndex] = useState(-1);
   const [glow, setGlow] = useState('');
   const [busy, setBusy] = useState(false);
 
-  // Whenever the cards array grows (data loaded) or is replaced (view toggled),
-  // reset the top pointer so new cards are visible immediately.
+  // Re-seed the top of the stack whenever the source data changes
+  // (data finishes loading, list is filtered, or the user toggles to seen-deck).
   useEffect(() => {
     if (cards.length > 0) {
       setTopIndex(cards.length - 1);
+    } else {
+      setTopIndex(-1);
     }
   }, [cards.length]);
 
-  // One stable ref per card slot so react-tinder-card can call .swipe() imperatively.
+  // Stable refs so the buttons can imperatively trigger a swipe on the top card.
   const childRefs = useMemo(
     () => Array.from({ length: cards.length }, () => createRef()),
     [cards.length],
@@ -46,56 +52,67 @@ export default function SwipeDeck({
     try {
       await onDecision?.({ targetUid: member.id, direction, source, member });
     } finally {
-      setTimeout(() => setGlow(''), 300);
+      window.setTimeout(() => setGlow(''), 300);
       setBusy(false);
     }
   };
 
-  const onCardSwiped = (dir, member) => {
-    if (dir === 'left' || dir === 'right') {
-      decide(member, dir, 'swipe');
-    }
+  const handleSwiped = (direction, member) => {
+    decide(member, direction, 'swipe');
     setTopIndex((i) => i - 1);
   };
 
-  const swipe = async (dir) => {
+  const handleDrag = ({ dx }) => {
+    if (dx > 60) setGlow('right');
+    else if (dx < -60) setGlow('left');
+    else setGlow('');
+  };
+
+  const swipe = async (direction) => {
     if (!current) return;
     const ref = childRefs[topIndex]?.current;
     if (ref?.swipe) {
-      await ref.swipe(dir);
+      ref.swipe(direction);
     } else {
-      await decide(current, dir, 'button');
+      await decide(current, direction, 'button');
       setTopIndex((i) => i - 1);
     }
   };
 
-  // No cards loaded yet or the user has worked through the whole deck.
   if (!cards.length || topIndex < 0) {
     return <EmptyDeckState onShowList={onShowList} />;
   }
 
-  // Only render cards that haven't been swiped away (index 0 … topIndex).
-  const visibleCards = cards.slice(0, topIndex + 1);
+  // Render the top card and the next one beneath it for depth.
+  // Anything further down stays unmounted.
+  const visibleStart = Math.max(0, topIndex - 1);
+  const visibleCards = cards.slice(visibleStart, topIndex + 1);
 
   return (
     <div className="space-y-5">
       <div className="relative h-[68vh] min-h-[480px] max-h-[720px]">
-        {visibleCards.map((member, idx) => (
-          <TinderCard
-            ref={childRefs[idx]}
-            className="absolute inset-0 select-none"
-            key={member.id}
-            preventSwipe={['up', 'down']}
-            onSwipe={(dir) => onCardSwiped(dir, member)}
-          >
-            <SwipeCard
-              member={member}
-              userDoc={userDoc}
-              glow={idx === topIndex ? glow : ''}
-              recycled={isRecycled}
-            />
-          </TinderCard>
-        ))}
+        {visibleCards.map((member, offset) => {
+          const absoluteIndex = visibleStart + offset;
+          const isTop = absoluteIndex === topIndex;
+          return (
+            <div key={member.id} className="absolute inset-0">
+              <SwipeableCard
+                ref={isTop ? childRefs[absoluteIndex] : null}
+                active={isTop}
+                onSwipe={(dir) => handleSwiped(dir, member)}
+                onDrag={isTop ? handleDrag : undefined}
+                className="absolute inset-0 select-none"
+              >
+                <SwipeCard
+                  member={member}
+                  userDoc={userDoc}
+                  glow={isTop ? glow : ''}
+                  recycled={isRecycled}
+                />
+              </SwipeableCard>
+            </div>
+          );
+        })}
       </div>
       <SwipeControls
         disabled={busy || !current}

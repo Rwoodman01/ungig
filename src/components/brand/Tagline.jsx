@@ -1,8 +1,8 @@
 import { APP_TAGLINE } from '../../lib/constants';
 
 /**
- * Brand tagline. Uses the middle-dot separators already baked into the copy:
- *   "Exchange value • Build together • Create a way out"
+ * Brand tagline. Gifted uses all-caps with middle dots:
+ *   "GIVE • RECEIVE • GROW"
  */
 export default function Tagline({ className = '' }) {
   return (

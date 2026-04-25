@@ -1,5 +1,5 @@
 // Step 1 of the onboarding flow: a warm welcome screen.
-// Brand essence drives the copy — Freedom, Community, Trust.
+// Gifted values drive the copy — Give, Receive, Grow, Trust.
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +9,7 @@ import { useAuth } from '../../contexts/AuthContext.jsx';
 import ProgressBar from '../../components/onboarding/ProgressBar.jsx';
 import Wordmark from '../../components/brand/Wordmark.jsx';
 import AuthFooter from '../../components/brand/AuthFooter.jsx';
-import { APP_NAME, BRAND_PILLARS } from '../../lib/constants.js';
+import { APP_NAME, BRAND_VALUES } from '../../lib/constants.js';
 
 export default function Welcome() {
   const { user, userDoc } = useAuth();
@@ -31,10 +31,7 @@ export default function Welcome() {
   };
 
   const firstName = (userDoc?.displayName || user?.displayName || '').split(' ')[0];
-  // Lead with Freedom + Community + Trust — the pillars most relevant on entry.
-  const introPillars = BRAND_PILLARS.filter((p) =>
-    ['freedom', 'community', 'trust'].includes(p.key),
-  );
+  const values = BRAND_VALUES;
 
   return (
     <div className="min-h-full flex flex-col">
@@ -42,32 +39,36 @@ export default function Welcome() {
       <div className="screen flex-1 px-6 py-8">
         <div className="flex-1 flex flex-col justify-center gap-8">
           <div className="text-center space-y-4">
+            <img
+              src="/giff/standing.png"
+              alt="Giff the Giving Frog"
+              className="mx-auto w-[260px] max-w-full drop-shadow-[0_18px_30px_rgba(15,19,49,0.12)]"
+            />
             <Wordmark size="lg" className="mx-auto" />
-            <h1 className="text-4xl text-silver leading-tight">
+            <h1 className="text-4xl leading-tight">
               {firstName ? `Welcome, ${firstName}` : `Welcome to ${APP_NAME}`}
             </h1>
-            <p className="text-silver max-w-sm mx-auto leading-relaxed">
-              {APP_NAME} is a trust-based community where members trade talents
-              for services — no money between us, just fair exchange with
-              people you can verify.
+            <p className="text-ink-secondary max-w-sm mx-auto leading-relaxed">
+              {APP_NAME} is a trust-based community built on small acts with big impact —
+              give what you can, receive what you need, and grow together.
             </p>
           </div>
 
           <ul className="space-y-3">
-            {introPillars.map((p) => (
+            {values.map((p) => (
               <li
                 key={p.key}
                 className="card p-4 flex items-start gap-3"
               >
                 <span
                   aria-hidden
-                  className="h-2 w-2 rounded-full bg-lilac mt-2 shrink-0"
+                  className="h-2 w-2 rounded-full bg-sage mt-2 shrink-0"
                 />
                 <div>
-                  <div className="font-display tracking-brand uppercase text-silver text-sm">
+                  <div className="text-sm font-semibold text-ink-primary">
                     {p.label}
                   </div>
-                  <div className="text-sm text-silver-300 leading-relaxed">
+                  <div className="text-sm text-ink-muted leading-relaxed">
                     {p.copy}
                   </div>
                 </div>
@@ -75,7 +76,7 @@ export default function Welcome() {
             ))}
           </ul>
 
-          <p className="text-sm text-silver-300 text-center max-w-sm mx-auto">
+          <p className="text-sm text-ink-muted text-center max-w-sm mx-auto">
             Takes about two minutes. We'll set up your membership, then get
             your profile ready so others can find you.
           </p>

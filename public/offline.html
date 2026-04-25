@@ -3,23 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Ungig — Offline</title>
-    <meta name="theme-color" content="#0D0D0F" />
+    <title>Gifted — Offline</title>
+    <meta name="theme-color" content="#F9F8F5" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Anton&family=Montserrat:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Fraunces:ital,wght@1,600;1,700&display=swap"
       rel="stylesheet"
     />
     <style>
-      :root { color-scheme: dark; }
+      :root { color-scheme: light; }
       * { box-sizing: border-box; }
       html, body {
         margin: 0;
         height: 100%;
-        font-family: "Montserrat", ui-sans-serif, system-ui, sans-serif;
-        background: #0D0D0F;
-        color: #D5D7DC;
+        font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+        background: #F9F8F5;
+        color: #0F1331;
       }
       main {
         min-height: 100%;
@@ -31,48 +31,92 @@
         text-align: center;
       }
       .brand {
-        font-family: "Anton", Impact, sans-serif;
-        font-size: 3rem;
-        color: #D5D7DC;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-        margin-bottom: 0.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-bottom: 0.75rem;
       }
-      .accent { color: #A7A1BC; }
-      p { color: #8A9099; max-width: 28rem; line-height: 1.5; }
+      .mark {
+        width: 44px;
+        height: 44px;
+        border-radius: 999px;
+        background: #FFFFFF;
+        border: 1px solid #ECEAE4;
+        box-shadow: 0 1px 2px rgba(15,19,49,0.04), 0 8px 24px rgba(15,19,49,0.06);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+      .mark img { width: 100%; height: 100%; object-fit: cover; }
+      .wordmark {
+        font-family: "Fraunces", ui-serif, Georgia, serif;
+        font-style: italic;
+        font-weight: 700;
+        font-size: 3rem;
+        letter-spacing: -0.01em;
+        line-height: 1;
+      }
+      .wordmark .gif { color: #0F1331; }
+      .wordmark .ted { color: #1B7F4F; }
+      .tagline {
+        margin-top: 0.35rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #A0A4B0;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+      }
+      p { color: #2A2D3A; max-width: 28rem; line-height: 1.5; }
+      .muted { color: #A0A4B0; font-size: 0.95rem; }
       button {
         margin-top: 1.5rem;
-        background: #A7A1BC;
-        color: #0D0D0F;
-        border: none;
+        background: #1B7F4F;
+        color: #FFFFFF;
+        border: 1px solid rgba(27,127,79,0.25);
         padding: 0.75rem 1.25rem;
         border-radius: 999px;
         font-weight: 600;
         font-family: inherit;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
+        box-shadow: 0 1px 2px rgba(15,19,49,0.06), 0 8px 18px rgba(27,127,79,0.18);
         cursor: pointer;
+      }
+      button:hover { background: #16683F; }
+      .mascot {
+        margin-top: 1.25rem;
+        width: min(320px, 80vw);
+        filter: drop-shadow(0 12px 24px rgba(15,19,49,0.10));
       }
       .footer {
         margin-top: auto;
         padding-top: 2rem;
-        font-family: "Anton", Impact, sans-serif;
         font-size: 0.75rem;
         letter-spacing: 0.12em;
-        color: #444F5A;
+        color: #A0A4B0;
         text-transform: uppercase;
+        font-weight: 600;
       }
     </style>
   </head>
   <body>
     <main>
-      <div class="brand">UN<span class="accent">GIG</span></div>
+      <div class="brand">
+        <div class="mark" aria-hidden>
+          <img src="/giff/face.png" alt="" />
+        </div>
+        <div>
+          <div class="wordmark"><span class="gif">Gif</span><span class="ted">ted</span></div>
+          <div class="tagline">GIVE • RECEIVE • GROW</div>
+        </div>
+      </div>
       <p>
-        You're offline. Some features need a connection, but we've cached what
-        we can. Try again once you're back online.
+        You're offline. Some features need a connection, but we've saved what we
+        can. Try again once you're back online.
       </p>
+      <p class="muted">Give what you can. Receive what you need.</p>
       <button onclick="location.reload()">Retry</button>
-      <div class="footer">Escape ordinary. Build extraordinary.</div>
+      <img class="mascot" src="/giff/standing.png" alt="Giff the Giving Frog" />
+      <div class="footer">Gifted</div>
     </main>
   </body>
 </html>

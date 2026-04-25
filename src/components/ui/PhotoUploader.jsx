@@ -50,15 +50,15 @@ export default function PhotoUploader({
     return (
       <div>
         {label ? (
-          <label className="text-sm font-medium text-ink-100 mb-2 block">
+          <label className="text-sm font-medium text-ink-secondary mb-2 block">
             {label}
           </label>
         ) : null}
         <div className="flex items-center gap-4">
           <div
             className={clsx(
-              'h-20 w-20 rounded-full overflow-hidden bg-navy-800',
-              'border border-navy-700 flex items-center justify-center text-ink-300',
+              'h-20 w-20 rounded-full overflow-hidden bg-surface',
+              'border border-border flex items-center justify-center text-ink-muted',
             )}
           >
             {singleUrl ? (
@@ -80,7 +80,7 @@ export default function PhotoUploader({
               <button
                 type="button"
                 onClick={() => onChange('')}
-                className="text-xs text-ink-300 text-left"
+                className="text-xs text-ink-muted text-left"
               >
                 Remove
               </button>
@@ -102,21 +102,21 @@ export default function PhotoUploader({
   return (
     <div>
       {label ? (
-        <label className="text-sm font-medium text-ink-100 mb-2 block">
+        <label className="text-sm font-medium text-ink-secondary mb-2 block">
           {label}
-          <span className="text-ink-300 text-xs ml-2">
+          <span className="text-ink-muted text-xs ml-2">
             {urls.length}/{max}
           </span>
         </label>
       ) : null}
       <div className="grid grid-cols-3 gap-2">
         {urls.map((url) => (
-          <div key={url} className="relative aspect-square rounded-lg overflow-hidden bg-navy-800 border border-navy-700">
+          <div key={url} className="relative aspect-square rounded-2xl overflow-hidden bg-surface border border-border">
             <img src={url} alt="" className="h-full w-full object-cover" />
             <button
               type="button"
               onClick={() => onChange(urls.filter((u) => u !== url))}
-              className="absolute top-1 right-1 bg-navy-950/70 text-ink-50 rounded-full h-6 w-6 text-xs"
+              className="absolute top-1 right-1 bg-surface/90 text-ink-primary border border-border rounded-full h-6 w-6 text-xs"
               aria-label="Remove photo"
             >
               ×
@@ -128,7 +128,7 @@ export default function PhotoUploader({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={busy}
-            className="aspect-square rounded-lg border border-dashed border-navy-700 text-ink-300 text-sm hover:bg-navy-800"
+            className="aspect-square rounded-2xl border border-dashed border-border text-ink-muted text-sm hover:bg-cream"
           >
             {busy ? '...' : '+ Add'}
           </button>

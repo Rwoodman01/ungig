@@ -2,8 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// Ungig — Vite config with PWA (manifest, service worker, offline fallback).
-// Theme color matches our dark navy; background matches on first paint.
+// Gifted — Vite config with PWA (manifest, service worker, offline fallback).
+// Light theme to match the Gifted brand background.
 export default defineConfig({
   plugins: [
     react(),
@@ -18,6 +18,9 @@ export default defineConfig({
         'favicon.ico',
         'icons/apple-touch-icon.png',
         'offline.html',
+        'giff/face.png',
+        'giff/standing.png',
+        'giff/gift.png',
       ],
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff2}'],
@@ -25,11 +28,11 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
       manifest: {
-        name: 'Ungig',
-        short_name: 'Ungig',
-        description: 'Ungig — Exchange value. Build together. Create a way out.',
-        theme_color: '#0D0D0F',
-        background_color: '#0D0D0F',
+        name: 'Gifted',
+        short_name: 'Gifted',
+        description: 'Gifted — GIVE • RECEIVE • GROW',
+        theme_color: '#F9F8F5',
+        background_color: '#F9F8F5',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',

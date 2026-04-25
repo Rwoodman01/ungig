@@ -28,13 +28,13 @@ export default function MyProfile() {
       <div className="flex items-start gap-4">
         <Avatar src={userDoc.photoURL} name={userDoc.displayName} size="xl" />
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-display font-bold text-gold-400 truncate">
+          <h1 className="text-xl font-display font-bold text-ink-primary truncate">
             {userDoc.displayName}
           </h1>
           {userDoc.location ? (
-            <p className="text-sm text-ink-300">{userDoc.location}</p>
+            <p className="text-sm text-ink-muted">{userDoc.location}</p>
           ) : null}
-          <p className="text-xs text-ink-300 mt-1">
+          <p className="text-xs text-ink-muted mt-1">
             Member since {formatDate(userDoc.memberSince)}
           </p>
           {userDoc.status === MEMBER_STATUS.PENDING ? (
@@ -42,15 +42,15 @@ export default function MyProfile() {
               Awaiting culture call
             </span>
           ) : null}
-          <div className="mt-2 flex gap-3 text-xs text-ink-100">
-            <span><strong className="text-gold-400">{userDoc.tradeCount ?? 0}</strong> trades</span>
-            <span><strong className="text-gold-400">{userDoc.badges?.length ?? 0}</strong> badges</span>
+          <div className="mt-2 flex gap-3 text-xs text-ink-secondary">
+            <span><strong className="text-green">{userDoc.tradeCount ?? 0}</strong> gifts</span>
+            <span><strong className="text-green">{userDoc.badges?.length ?? 0}</strong> badges</span>
           </div>
         </div>
       </div>
 
       {userDoc.bio ? (
-        <p className="text-sm text-ink-100 leading-relaxed">{userDoc.bio}</p>
+        <p className="text-sm text-ink-secondary leading-relaxed">{userDoc.bio}</p>
       ) : null}
 
       {userDoc.badges?.length ? (
@@ -61,7 +61,7 @@ export default function MyProfile() {
 
       {userDoc.talentsOffered?.length ? (
         <section>
-          <h2 className="text-sm font-semibold text-ink-50 mb-2">Offers</h2>
+          <h2 className="text-sm font-semibold text-ink-primary mb-2">Offers</h2>
           <div className="flex flex-wrap gap-2">
             {userDoc.talentsOffered.map((t) => <span key={t} className="chip">{t}</span>)}
           </div>
@@ -70,7 +70,7 @@ export default function MyProfile() {
 
       {userDoc.servicesNeeded?.length ? (
         <section>
-          <h2 className="text-sm font-semibold text-ink-50 mb-2">Needs</h2>
+          <h2 className="text-sm font-semibold text-ink-primary mb-2">Needs</h2>
           <div className="flex flex-wrap gap-2">
             {userDoc.servicesNeeded.map((t) => <span key={t} className="chip">{t}</span>)}
           </div>
@@ -121,7 +121,7 @@ function EditProfileInline({ userDoc, uid, onDone }) {
 
   return (
     <form onSubmit={save} className="space-y-5">
-      <h1 className="text-xl font-display font-bold text-gold-400">Edit profile</h1>
+      <h1 className="text-xl font-display font-bold text-ink-primary">Edit profile</h1>
       <PhotoUploader
         uid={uid}
         kind="avatar"
@@ -130,13 +130,13 @@ function EditProfileInline({ userDoc, uid, onDone }) {
         label="Profile photo"
       />
       <div>
-        <label className="text-sm font-medium text-ink-100 mb-1 block">Name</label>
+        <label className="text-sm font-medium text-ink-secondary mb-1 block">Name</label>
         <input className="input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
       </div>
       <div>
-        <label className="text-sm font-medium text-ink-100 mb-1 block">
+        <label className="text-sm font-medium text-ink-secondary mb-1 block">
           Bio
-          <span className="text-ink-300 text-xs ml-2">{bio.length}/{LIMITS.BIO_MAX}</span>
+          <span className="text-ink-muted text-xs ml-2">{bio.length}/{LIMITS.BIO_MAX}</span>
         </label>
         <textarea
           className="input min-h-[5rem]"
@@ -145,7 +145,7 @@ function EditProfileInline({ userDoc, uid, onDone }) {
         />
       </div>
       <div>
-        <label className="text-sm font-medium text-ink-100 mb-1 block">Location</label>
+        <label className="text-sm font-medium text-ink-secondary mb-1 block">Location</label>
         <input className="input" value={location} onChange={(e) => setLocation(e.target.value)} />
       </div>
       <TagInput value={talents} onChange={setTalents} max={LIMITS.TALENTS_MAX} label="Talents I offer" />

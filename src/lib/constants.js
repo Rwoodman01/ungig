@@ -1,20 +1,19 @@
-// Ungig app-wide constants.
+// Gifted app-wide constants.
 // Keep enums and allowlists here so components don't invent their own strings.
 
-export const APP_NAME = 'Ungig';
-// Brand tagline — shown on Landing, Welcome, and marketing surfaces.
-export const APP_TAGLINE = 'Exchange value • Build together • Create a way out';
-// Footer stamp on every auth screen, per brand guide.
-export const AUTH_FOOTER_LINE = 'Escape ordinary. Build extraordinary.';
+export const APP_NAME = 'Gifted';
+// Brand tagline — shown anywhere the logo appears.
+export const APP_TAGLINE = 'GIVE • RECEIVE • GROW';
+// Footer line on auth/onboarding surfaces.
+export const AUTH_FOOTER_LINE = 'Give what you can. Receive what you need.';
 
-// Brand essence — used to inform microcopy.
-// Victory · Freedom · Growth · Community · Trust
-export const BRAND_PILLARS = Object.freeze([
-  { key: 'victory',   label: 'Victory',   copy: 'Win on your own terms.' },
-  { key: 'freedom',   label: 'Freedom',   copy: "There's a way out — and a better way forward." },
-  { key: 'growth',    label: 'Growth',    copy: 'Real progress. Real potential. No ceiling.' },
-  { key: 'community', label: 'Community', copy: 'Build together. Stronger together.' },
-  { key: 'trust',     label: 'Trust',     copy: 'Real value. Real opportunities. Real change.' },
+// Brand values — used to inform microcopy.
+// Give · Receive · Grow · Trust
+export const BRAND_VALUES = Object.freeze([
+  { key: 'give',    label: 'Give',    copy: 'Share your gifts and time.' },
+  { key: 'receive', label: 'Receive', copy: 'Get help and support you need.' },
+  { key: 'grow',    label: 'Grow',    copy: 'Build skills, confidence, and connections.' },
+  { key: 'trust',   label: 'Trust',   copy: 'Safe, kind, and community-centered.' },
 ]);
 
 // Admins are bootstrapped by email. This list is mirrored in firestore.rules.

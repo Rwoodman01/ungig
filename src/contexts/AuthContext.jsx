@@ -105,13 +105,13 @@ export function AuthProvider({ children }) {
           },
           (err) => {
             // eslint-disable-next-line no-console
-            console.error('[Ungig] user doc listener error', err);
+            console.error('[Gifted] user doc listener error', err);
             setDocLoading(false);
           },
         );
       } catch (err) {
         // eslint-disable-next-line no-console
-        console.error('[Ungig] ensureUserDoc failed', err);
+        console.error('[Gifted] ensureUserDoc failed', err);
         setDocLoading(false);
       }
     });

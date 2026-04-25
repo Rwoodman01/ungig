@@ -17,8 +17,8 @@ export default function Avatar({ src, name, size = 'md', className }) {
   return (
     <div
       className={clsx(
-        'rounded-full overflow-hidden bg-navy-800 border border-navy-700',
-        'flex items-center justify-center text-gold-300 font-semibold',
+        'rounded-full overflow-hidden bg-surface border border-border',
+        'flex items-center justify-center text-ink-secondary font-semibold',
         sizes[size] || sizes.md,
         className,
       )}
@@ -27,7 +27,11 @@ export default function Avatar({ src, name, size = 'md', className }) {
       {src ? (
         <img src={src} alt={name ?? ''} className="h-full w-full object-cover" />
       ) : (
-        <span>{initials(name)}</span>
+        <img
+          src="/giff/face.png"
+          alt=""
+          className="h-full w-full object-cover"
+        />
       )}
     </div>
   );

@@ -18,7 +18,7 @@ export default function AllMembers() {
 
   return (
     <div className="space-y-3">
-      <h1 className="text-2xl font-display font-bold text-gold-400">All members</h1>
+      <h1 className="text-2xl font-display font-bold text-ink-primary">All members</h1>
       {rows.map((m) => (
         <Link
           key={m.id}
@@ -27,15 +27,15 @@ export default function AllMembers() {
         >
           <Avatar src={m.photoURL} name={m.displayName} size="sm" />
           <div className="flex-1 min-w-0">
-            <div className="font-medium text-ink-50 truncate">
+            <div className="font-medium text-ink-primary truncate">
               {m.displayName || '(no name)'}
             </div>
-            <div className="text-xs text-ink-300 truncate">{m.email}</div>
+            <div className="text-xs text-ink-muted truncate">{m.email}</div>
           </div>
           <div className="text-right">
             <span className="chip text-[10px] uppercase">{m.status}</span>
-            <div className="text-xs text-ink-300 mt-1">
-              {m.tradeCount ?? 0} trades · {(m.badges ?? []).length} badges
+            <div className="text-xs text-ink-muted mt-1">
+              {m.tradeCount ?? 0} gifts · {(m.badges ?? []).length} badges
             </div>
           </div>
         </Link>

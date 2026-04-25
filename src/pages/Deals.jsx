@@ -1,4 +1,4 @@
-// "Deals" tab — every deal the current user is part of.
+// "Exchanges" tab — every deal the current user is part of.
 // Relies on denormalized `participantIds` for a single array-contains query.
 
 import { useMemo } from 'react';
@@ -41,11 +41,11 @@ export default function Deals() {
   if (deals.length === 0) {
     return (
       <EmptyState
-        title="No trades yet"
-        description="Browse members and request your first trade to get started."
+        title="No exchanges yet"
+        description="Find your match and propose your first exchange to get started."
         action={
           <Link to="/browse" className="btn-primary inline-flex">
-            Browse members
+            Find your match
           </Link>
         }
       />
@@ -54,7 +54,7 @@ export default function Deals() {
 
   return (
     <div className="space-y-3">
-      <h1 className="text-2xl font-display font-bold text-gold-400">Deals</h1>
+      <h1 className="text-2xl font-display font-bold text-ink-primary">Exchanges</h1>
       {deals.map((d) => {
         const iAmInitiator = d.initiatorId === user.uid;
         const otherId = iAmInitiator ? d.receiverId : d.initiatorId;
@@ -65,11 +65,11 @@ export default function Deals() {
             className="card p-4 flex items-center justify-between gap-3"
           >
             <div className="min-w-0">
-              <div className="text-sm text-ink-300">
-                With <span className="text-ink-50">{otherId.slice(0, 6)}…</span>
+              <div className="text-sm text-ink-muted">
+                With <span className="text-ink-primary">{otherId.slice(0, 6)}…</span>
                 {iAmInitiator ? ' (you requested)' : ' (they requested)'}
               </div>
-              <div className="text-xs text-ink-300 mt-1">
+              <div className="text-xs text-ink-muted mt-1">
                 Updated {timeAgo(d.updatedAt)}
               </div>
             </div>

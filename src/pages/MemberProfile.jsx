@@ -17,9 +17,9 @@ import { createDeal } from '../lib/deals.js';
 
 function Stars({ rating }) {
   return (
-    <span className="text-gold-400 text-sm" aria-label={`${rating} of 5 stars`}>
+    <span className="text-gold text-sm" aria-label={`${rating} of 5 stars`}>
       {'★'.repeat(rating)}
-      <span className="text-ink-300">{'★'.repeat(Math.max(0, 5 - rating))}</span>
+      <span className="text-ink-muted">{'★'.repeat(Math.max(0, 5 - rating))}</span>
     </span>
   );
 }
@@ -60,24 +60,24 @@ export default function MemberProfile() {
       <div className="flex items-start gap-4">
         <Avatar src={member.photoURL} name={member.displayName} size="xl" />
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-display font-bold text-gold-400 truncate">
+          <h1 className="text-xl font-display font-bold text-ink-primary truncate">
             {member.displayName}
           </h1>
           {member.location ? (
-            <p className="text-sm text-ink-300">{member.location}</p>
+            <p className="text-sm text-ink-muted">{member.location}</p>
           ) : null}
-          <p className="text-xs text-ink-300 mt-1">
+          <p className="text-xs text-ink-muted mt-1">
             Member since {formatDate(member.memberSince)}
           </p>
-          <div className="mt-2 flex gap-3 text-xs text-ink-100">
-            <span><strong className="text-gold-400">{member.tradeCount ?? 0}</strong> trades</span>
-            <span><strong className="text-gold-400">{member.badges?.length ?? 0}</strong> badges</span>
+          <div className="mt-2 flex gap-3 text-xs text-ink-secondary">
+            <span><strong className="text-green">{member.tradeCount ?? 0}</strong> gifts</span>
+            <span><strong className="text-green">{member.badges?.length ?? 0}</strong> badges</span>
           </div>
         </div>
       </div>
 
       {member.bio ? (
-        <p className="text-sm text-ink-100 leading-relaxed">{member.bio}</p>
+        <p className="text-sm text-ink-secondary leading-relaxed">{member.bio}</p>
       ) : null}
 
       {member.badges?.length ? (
@@ -88,7 +88,7 @@ export default function MemberProfile() {
 
       {member.talentsOffered?.length ? (
         <section>
-          <h2 className="text-sm font-semibold text-ink-50 mb-2">Offers</h2>
+          <h2 className="text-sm font-semibold text-ink-primary mb-2">Offers</h2>
           <div className="flex flex-wrap gap-2">
             {member.talentsOffered.map((t) => <span key={t} className="chip">{t}</span>)}
           </div>
@@ -97,7 +97,7 @@ export default function MemberProfile() {
 
       {member.servicesNeeded?.length ? (
         <section>
-          <h2 className="text-sm font-semibold text-ink-50 mb-2">Needs</h2>
+          <h2 className="text-sm font-semibold text-ink-primary mb-2">Needs</h2>
           <div className="flex flex-wrap gap-2">
             {member.servicesNeeded.map((t) => <span key={t} className="chip">{t}</span>)}
           </div>
@@ -106,7 +106,7 @@ export default function MemberProfile() {
 
       {member.proofPhotos?.length ? (
         <section>
-          <h2 className="text-sm font-semibold text-ink-50 mb-2">Proof of work</h2>
+          <h2 className="text-sm font-semibold text-ink-primary mb-2">Proof of work</h2>
           <div className="grid grid-cols-3 gap-2">
             {member.proofPhotos.map((url) => (
               <a
@@ -114,7 +114,7 @@ export default function MemberProfile() {
                 href={url}
                 target="_blank"
                 rel="noreferrer"
-                className="aspect-square rounded-lg overflow-hidden bg-navy-800 border border-navy-700"
+                className="aspect-square rounded-2xl overflow-hidden bg-cream border border-border"
               >
                 <img src={url} alt="" className="h-full w-full object-cover" />
               </a>
@@ -125,28 +125,28 @@ export default function MemberProfile() {
 
       {member.connections?.length ? (
         <section>
-          <h2 className="text-sm font-semibold text-ink-50 mb-2">Connections</h2>
-          <p className="text-xs text-ink-300">
-            {member.connections.length} completed trade partner
+          <h2 className="text-sm font-semibold text-ink-primary mb-2">Connections</h2>
+          <p className="text-xs text-ink-muted">
+            {member.connections.length} completed exchange partner
             {member.connections.length === 1 ? '' : 's'}.
           </p>
         </section>
       ) : null}
 
       <section>
-        <h2 className="text-sm font-semibold text-ink-50 mb-2">Reviews</h2>
+        <h2 className="text-sm font-semibold text-ink-primary mb-2">Reviews</h2>
         {reviews.length === 0 ? (
-          <p className="text-xs text-ink-300">No reviews yet.</p>
+          <p className="text-xs text-ink-muted">No reviews yet.</p>
         ) : (
           <div className="space-y-3">
             {reviews.map((r) => (
               <div key={r.id} className="card p-4">
                 <div className="flex items-center justify-between">
                   <Stars rating={r.rating} />
-                  <span className="text-xs text-ink-300">{formatDate(r.createdAt)}</span>
+                  <span className="text-xs text-ink-muted">{formatDate(r.createdAt)}</span>
                 </div>
                 {r.comment ? (
-                  <p className="text-sm text-ink-100 mt-2">{r.comment}</p>
+                  <p className="text-sm text-ink-secondary mt-2">{r.comment}</p>
                 ) : null}
               </div>
             ))}
@@ -160,11 +160,11 @@ export default function MemberProfile() {
         </Link>
       ) : canEngage ? (
         <button className="btn-primary w-full" onClick={requestTrade}>
-          Request a Trade
+          Propose Trade
         </button>
       ) : (
         <LockedAction>
-          <strong className="text-gold-300">Request a Trade</strong>
+          <strong className="text-green">Propose Trade</strong>
           {' '}unlocks once your culture call is complete.
         </LockedAction>
       )}

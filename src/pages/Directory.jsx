@@ -5,7 +5,7 @@
 // non-approved members simply can't be read by others.
 
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { db } from '../firebase.js';
@@ -48,6 +48,8 @@ function MemberCard({ member }) {
 
 export default function Directory() {
   const { user } = useAuth();
+  const [params] = useSearchParams();
+  const intent = params.get('intent');
   const [q, setQ] = useState('');
   const [offered, setOffered] = useState('');
   const [needed, setNeeded] = useState('');
@@ -89,7 +91,12 @@ export default function Directory() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-display font-bold text-gold-400">Browse</h1>
+      <div>
+        <h1 className="text-2xl font-display font-bold text-ink-primary">Find your match</h1>
+        {intent === 'give' ? (
+          <p className="text-sm text-ink-muted mt-1">Someone could use what you offer.</p>
+        ) : null}
+      </div>
 
       <input
         className="input"
@@ -99,7 +106,7 @@ export default function Directory() {
       />
 
       <details className="card p-4">
-        <summary className="cursor-pointer text-sm text-ink-100 font-medium">
+        <summary className="cursor-pointer text-sm text-ink-secondary font-medium">
           Filters
         </summary>
         <div className="mt-3 space-y-2">

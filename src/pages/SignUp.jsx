@@ -49,9 +49,9 @@ export default function SignUp() {
 
   return (
     <div className="screen px-6 py-10">
-      <Wordmark size="lg" />
-      <h1 className="text-3xl mt-4 text-silver">Start your escape</h1>
-      <p className="text-silver-300 mt-1 text-sm">
+      <Wordmark size="lg" withTagline />
+      <h1 className="text-3xl mt-6">Join Gifted</h1>
+      <p className="text-ink-muted mt-1 text-sm">
         Create your account to request membership.
       </p>
 
@@ -89,10 +89,10 @@ export default function SignUp() {
         </button>
       </form>
 
-      <div className="my-6 flex items-center gap-3 text-ink-300 text-xs uppercase tracking-wider">
-        <span className="flex-1 h-px bg-navy-800" />
+      <div className="my-6 flex items-center gap-3 text-ink-muted text-xs uppercase tracking-wider">
+        <span className="flex-1 h-px bg-border" />
         or
-        <span className="flex-1 h-px bg-navy-800" />
+        <span className="flex-1 h-px bg-border" />
       </div>
 
       <button
@@ -104,9 +104,9 @@ export default function SignUp() {
         Continue with Google
       </button>
 
-      <p className="mt-8 text-center text-sm text-silver-300">
+      <p className="mt-8 text-center text-sm text-ink-muted">
         Already a member?{' '}
-        <Link to="/signin" className="text-lilac font-medium">
+        <Link to="/signin" className="text-green font-medium">
           Sign in
         </Link>
       </p>

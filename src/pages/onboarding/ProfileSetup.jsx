@@ -12,6 +12,7 @@ import PhotoUploader from '../../components/ui/PhotoUploader.jsx';
 import TagInput from '../../components/ui/TagInput.jsx';
 import ProgressBar from '../../components/onboarding/ProgressBar.jsx';
 import { LIMITS } from '../../lib/constants.js';
+import AuthFooter from '../../components/brand/AuthFooter.jsx';
 
 export default function ProfileSetup() {
   const { user, userDoc } = useAuth();
@@ -62,10 +63,10 @@ export default function ProfileSetup() {
     <div className="min-h-full flex flex-col">
       <ProgressBar currentStep="profile" />
       <div className="screen px-6 py-4">
-        <h1 className="text-2xl font-display font-bold text-gold-400">
+        <h1 className="text-2xl font-display font-bold text-ink-primary">
           Set up your profile
         </h1>
-        <p className="text-sm text-ink-300 mt-1">
+        <p className="text-sm text-ink-muted mt-1">
           This is how other members will discover and trust you.
         </p>
 
@@ -79,7 +80,7 @@ export default function ProfileSetup() {
         />
 
         <div>
-          <label className="text-sm font-medium text-ink-100 mb-1 block">
+          <label className="text-sm font-medium text-ink-secondary mb-1 block">
             Display name
           </label>
           <input
@@ -91,9 +92,9 @@ export default function ProfileSetup() {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink-100 mb-1 block">
+          <label className="text-sm font-medium text-ink-secondary mb-1 block">
             Short bio
-            <span className="text-ink-300 text-xs ml-2">
+            <span className="text-ink-muted text-xs ml-2">
               {bio.length}/{LIMITS.BIO_MAX}
             </span>
           </label>
@@ -107,7 +108,7 @@ export default function ProfileSetup() {
         </div>
 
         <div>
-          <label className="text-sm font-medium text-ink-100 mb-1 block">
+          <label className="text-sm font-medium text-ink-secondary mb-1 block">
             Location
           </label>
           <input
@@ -152,6 +153,8 @@ export default function ProfileSetup() {
           {busy ? 'Saving...' : 'Save my profile'}
         </button>
       </form>
+
+      <AuthFooter className="mt-10 pb-4" />
       </div>
     </div>
   );

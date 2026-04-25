@@ -1,4 +1,4 @@
-// Ungig service worker — injectManifest strategy.
+// Gifted service worker — injectManifest strategy.
 // The precache manifest is injected at build time at `self.__WB_MANIFEST`.
 
 import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';

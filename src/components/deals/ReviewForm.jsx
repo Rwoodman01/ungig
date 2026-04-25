@@ -25,7 +25,7 @@ export default function ReviewForm({ dealId, reviewerId, revieweeId, onDone }) {
 
   return (
     <form onSubmit={save} className="card p-4 space-y-3">
-      <h3 className="font-semibold text-ink-50">Leave a review</h3>
+      <h3 className="font-semibold text-ink-primary">Leave a review</h3>
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((n) => (
           <button
@@ -34,7 +34,7 @@ export default function ReviewForm({ dealId, reviewerId, revieweeId, onDone }) {
             onClick={() => setRating(n)}
             className={clsx(
               'text-2xl',
-              n <= rating ? 'text-gold-400' : 'text-ink-300',
+              n <= rating ? 'text-gold' : 'text-ink-muted',
             )}
             aria-label={`Rate ${n} star${n === 1 ? '' : 's'}`}
           >
@@ -48,7 +48,7 @@ export default function ReviewForm({ dealId, reviewerId, revieweeId, onDone }) {
         value={comment}
         onChange={(e) => setComment(e.target.value.slice(0, LIMITS.REVIEW_MAX))}
       />
-      <div className="text-xs text-ink-300 text-right">
+      <div className="text-xs text-ink-muted text-right">
         {comment.length}/{LIMITS.REVIEW_MAX}
       </div>
       {error ? <p className="text-red-400 text-sm">{error}</p> : null}

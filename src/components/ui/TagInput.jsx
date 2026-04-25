@@ -29,9 +29,9 @@ export default function TagInput({
   return (
     <div>
       {label ? (
-        <label className="text-sm font-medium text-ink-100 mb-1 block">
+        <label className="text-sm font-medium text-ink-secondary mb-1 block">
           {label}
-          <span className="text-ink-300 text-xs ml-2">
+          <span className="text-ink-muted text-xs ml-2">
             {value.length}/{max}
           </span>
         </label>
@@ -42,7 +42,7 @@ export default function TagInput({
             key={t}
             type="button"
             onClick={() => remove(t)}
-            className="chip-gold hover:opacity-80"
+            className="chip-accent hover:opacity-80"
             aria-label={`Remove ${t}`}
           >
             {t}
@@ -51,7 +51,7 @@ export default function TagInput({
         ))}
         {value.length < max ? (
           <input
-            className="flex-1 min-w-[8rem] bg-transparent outline-none text-ink-50 placeholder:text-ink-300"
+            className="flex-1 min-w-[8rem] bg-transparent outline-none text-ink-primary placeholder:text-ink-muted"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -67,7 +67,7 @@ export default function TagInput({
           />
         ) : null}
       </div>
-      {hint ? <p className="text-xs text-ink-300 mt-1">{hint}</p> : null}
+      {hint ? <p className="text-xs text-ink-muted mt-1">{hint}</p> : null}
     </div>
   );
 }

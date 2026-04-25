@@ -6,9 +6,9 @@
 
 export default function LockedAction({ children }) {
   return (
-    <div className="card p-4 border-dashed border-gold-500/30 bg-gold-500/5 text-center">
+    <div className="card-cream p-4 text-center">
       <div className="text-xl mb-1" aria-hidden>🤝</div>
-      <p className="text-sm text-gold-200 leading-relaxed">
+      <p className="text-sm text-ink-secondary leading-relaxed">
         {children ?? 'Available once your culture call is complete.'}
       </p>
     </div>

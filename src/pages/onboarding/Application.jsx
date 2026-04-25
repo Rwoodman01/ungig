@@ -44,13 +44,13 @@ const STANDARDS = [
 function SectionHeader({ index, title, subtitle }) {
   return (
     <div className="flex items-start gap-3 mb-3">
-      <div className="h-7 w-7 rounded-full bg-gold-500/20 text-gold-400 flex items-center justify-center text-sm font-semibold">
+      <div className="h-7 w-7 rounded-full bg-sage-200 text-green flex items-center justify-center text-sm font-semibold">
         {index}
       </div>
       <div>
-        <h2 className="font-display text-lg font-bold text-ink-50">{title}</h2>
+        <h2 className="text-lg font-display font-bold text-ink-primary">{title}</h2>
         {subtitle ? (
-          <p className="text-xs text-ink-300 mt-0.5">{subtitle}</p>
+          <p className="text-xs text-ink-muted mt-0.5">{subtitle}</p>
         ) : null}
       </div>
     </div>
@@ -100,10 +100,10 @@ export default function Application() {
       <ProgressBar currentStep="application" />
       <div className="screen flex-1 px-6 py-6 space-y-7">
         <div className="text-center">
-          <h1 className="font-display text-3xl font-bold text-gold-400">
+          <h1 className="text-3xl font-display font-bold text-ink-primary">
             Your application
           </h1>
-          <p className="text-sm text-ink-300 mt-2">
+          <p className="text-sm text-ink-muted mt-2">
             Three quick things, then on to your profile.
           </p>
         </div>
@@ -117,13 +117,13 @@ export default function Application() {
           />
           <div className="card p-5">
             <div className="text-center">
-              <div className="text-3xl font-display font-bold text-gold-400">
+              <div className="text-3xl font-display font-bold text-ink-primary">
                 {SUBSCRIPTION_PRICE.label}
               </div>
-              <p className="text-sm text-ink-100 mt-1">
+              <p className="text-sm text-ink-secondary mt-1">
                 Founding members get the first month free.
               </p>
-              <p className="text-xs text-ink-300 mt-1">
+              <p className="text-xs text-ink-muted mt-1">
                 Cancel anytime — your trade history stays with you.
               </p>
             </div>
@@ -135,7 +135,7 @@ export default function Application() {
             >
               {paidNow ? 'Membership ready ✓' : 'Claim founding member spot'}
             </button>
-            <p className="text-[11px] text-ink-300 text-center mt-2">
+            <p className="text-[11px] text-ink-muted text-center mt-2">
               Payment is stubbed for MVP — no card is charged.
             </p>
           </div>
@@ -149,7 +149,7 @@ export default function Application() {
             subtitle="Trust starts with verified identity."
           />
           <div className="card p-5 space-y-3">
-            <p className="text-sm text-ink-100 leading-relaxed">
+            <p className="text-sm text-ink-secondary leading-relaxed">
               We partner with Checkr. It's a short flow — ID and a quick
               criminal/records check. Takes a few minutes, then comes back in
               a day or two.
@@ -162,12 +162,12 @@ export default function Application() {
             >
               Open Checkr
             </a>
-            <label className="flex items-start gap-3 text-sm text-ink-100 cursor-pointer">
+            <label className="flex items-start gap-3 text-sm text-ink-secondary cursor-pointer">
               <input
                 type="checkbox"
                 checked={bgChecked}
                 onChange={(e) => setBgChecked(e.target.checked)}
-                className="mt-1 h-5 w-5 accent-gold-500"
+                className="mt-1 h-5 w-5 accent-green"
               />
               I have initiated my background check.
             </label>
@@ -179,23 +179,23 @@ export default function Application() {
           <SectionHeader
             index={3}
             title="Community standards"
-            subtitle="What it means to be part of Ungig."
+            subtitle="What it means to be part of Gifted."
           />
           <div className="card p-5 space-y-4">
             <ul className="space-y-4">
               {STANDARDS.map((s) => (
                 <li key={s.title}>
-                  <div className="text-sm font-semibold text-gold-300">{s.title}</div>
-                  <p className="text-sm text-ink-100 mt-0.5 leading-relaxed">{s.body}</p>
+                  <div className="text-sm font-semibold text-ink-primary">{s.title}</div>
+                  <p className="text-sm text-ink-secondary mt-0.5 leading-relaxed">{s.body}</p>
                 </li>
               ))}
             </ul>
-            <label className="flex items-start gap-3 text-sm text-ink-100 cursor-pointer pt-1">
+            <label className="flex items-start gap-3 text-sm text-ink-secondary cursor-pointer pt-1">
               <input
                 type="checkbox"
                 checked={standardsAgreed}
                 onChange={(e) => setStandardsAgreed(e.target.checked)}
-                className="mt-1 h-5 w-5 accent-gold-500"
+                className="mt-1 h-5 w-5 accent-green"
               />
               I agree to uphold these standards.
             </label>
@@ -212,9 +212,9 @@ export default function Application() {
           {busy ? 'Submitting...' : 'Complete my application'}
         </button>
 
-        <p className="text-xs text-ink-300 text-center pb-2">
+        <p className="text-xs text-ink-muted text-center pb-2">
           A community steward will reach out for a short culture call.
-          You can explore Ungig while you wait.
+          You can explore Gifted while you wait.
         </p>
 
         <AuthFooter className="pb-4" />

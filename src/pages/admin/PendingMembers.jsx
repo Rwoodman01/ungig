@@ -45,7 +45,7 @@ export default function PendingMembers() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-display font-bold text-gold-400">
+      <h1 className="text-2xl font-display font-bold text-ink-primary">
         Pending approvals
       </h1>
       {rows.length === 0 ? (
@@ -56,10 +56,10 @@ export default function PendingMembers() {
           <div key={m.id} className="card p-4 flex items-start gap-3">
             <Avatar src={m.photoURL} name={m.displayName} size="sm" />
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-ink-50 truncate">
+              <div className="font-semibold text-ink-primary truncate">
                 {m.displayName || '(no name)'}
               </div>
-              <div className="text-xs text-ink-300 truncate">{m.email}</div>
+              <div className="text-xs text-ink-muted truncate">{m.email}</div>
             </div>
             <div className="flex flex-col gap-2">
               <button

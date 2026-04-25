@@ -20,7 +20,7 @@ const firebaseConfig = {
 if (!firebaseConfig.apiKey) {
   // eslint-disable-next-line no-console
   console.warn(
-    '[Ungig] Missing Firebase env vars. Copy .env.example to .env.local and fill in your Firebase project credentials.',
+    '[Gifted] Missing Firebase env vars. Copy .env.example to .env.local and fill in your Firebase project credentials.',
   );
 }
 

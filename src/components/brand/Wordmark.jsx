@@ -1,15 +1,14 @@
 import { APP_NAME } from '../../lib/constants';
+import Tagline from './Tagline.jsx';
 
 /**
- * Ungig wordmark. Text-only for now — Anton, all caps, lilac accent on the
- * second syllable so it reads as UN·GIG even in monochrome contexts.
- *
- * Sizes map onto Tailwind's text scale. Pass `accent={false}` for a flat
- * monochrome render (e.g. favicons, compact top bars).
+ * Gifted wordmark.
+ * - Typography: Fraunces Italic (via `.wordmark` class in `src/index.css`)
+ * - Color split: "Gif" (ink.primary) + "ted" (green)
  */
 export default function Wordmark({
   size = 'md',
-  accent = true,
+  withTagline = false,
   className = '',
 }) {
   const sizeClass =
@@ -18,16 +17,18 @@ export default function Wordmark({
     size === 'sm' ? 'text-lg' :
     'text-2xl';
 
-  const letters = APP_NAME.toUpperCase();
-  // Brand accent falls on the trailing half of the wordmark when enabled.
-  const pivot = Math.ceil(letters.length / 2);
-  const head = letters.slice(0, pivot);
-  const tail = letters.slice(pivot);
+  const name = APP_NAME || 'Gifted';
+  const pivot = 3; // "Gif" | "ted"
+  const head = name.slice(0, pivot);
+  const tail = name.slice(pivot);
 
   return (
-    <span className={`wordmark ${sizeClass} ${className}`}>
-      {head}
-      <span className={accent ? 'text-lilac' : ''}>{tail}</span>
+    <span className={className}>
+      <span className={`wordmark ${sizeClass}`}>
+        <span className="text-ink-primary">{head}</span>
+        <span className="text-green">{tail}</span>
+      </span>
+      {withTagline ? <Tagline className="mt-2" /> : null}
     </span>
   );
 }

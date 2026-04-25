@@ -48,7 +48,7 @@ export default function MessageThread({ dealId }) {
         className="p-3 space-y-2 max-h-80 overflow-y-auto"
       >
         {messages.length === 0 ? (
-          <p className="text-xs text-ink-300 text-center py-6">
+          <p className="text-xs text-ink-muted text-center py-6">
             Start the conversation. Agree on what each of you will provide and
             pick a date.
           </p>
@@ -61,12 +61,12 @@ export default function MessageThread({ dealId }) {
                 className={clsx(
                   'max-w-[75%] px-3 py-2 rounded-2xl text-sm',
                   mine
-                    ? 'bg-gold-500/20 text-gold-200 rounded-br-sm'
-                    : 'bg-navy-800 text-ink-50 rounded-bl-sm',
+                    ? 'bg-green-50 text-ink-primary border border-border rounded-br-sm'
+                    : 'bg-cream text-ink-primary border border-border rounded-bl-sm',
                 )}
               >
                 <div>{m.text}</div>
-                <div className="text-[10px] text-ink-300 mt-1">
+                <div className="text-[10px] text-ink-muted mt-1">
                   {timeAgo(m.createdAt)}
                 </div>
               </div>
@@ -75,7 +75,7 @@ export default function MessageThread({ dealId }) {
         })}
       </div>
       {canEngage ? (
-        <form onSubmit={send} className="flex gap-2 p-2 border-t border-navy-800">
+        <form onSubmit={send} className="flex gap-2 p-2 border-t border-border">
           <input
             className="input flex-1"
             value={draft}
@@ -88,7 +88,7 @@ export default function MessageThread({ dealId }) {
           </button>
         </form>
       ) : (
-        <div className="p-3 border-t border-navy-800 text-center text-xs text-gold-200/80">
+        <div className="p-3 border-t border-border text-center text-xs text-ink-muted">
           🤝 Messaging unlocks once your culture call is complete.
         </div>
       )}

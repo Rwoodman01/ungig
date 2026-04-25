@@ -25,17 +25,17 @@ export default function AllDeals() {
 
   return (
     <div className="space-y-3">
-      <h1 className="text-2xl font-display font-bold text-gold-400">All deals</h1>
+      <h1 className="text-2xl font-display font-bold text-ink-primary">All deals</h1>
       {rows.map((d) => (
         <Link key={d.id} to={`/deals/${d.id}`} className="card p-4 block">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-ink-50 font-mono">{d.id.slice(0, 8)}…</span>
+            <span className="text-sm text-ink-primary font-mono">{d.id.slice(0, 8)}…</span>
             <span className="chip-gold text-[10px] uppercase">{d.status}</span>
           </div>
-          <div className="text-xs text-ink-300 mt-1">
+          <div className="text-xs text-ink-muted mt-1">
             {d.initiatorId.slice(0, 6)}… ↔ {d.receiverId.slice(0, 6)}…
           </div>
-          <div className="text-xs text-ink-300 mt-1">
+          <div className="text-xs text-ink-muted mt-1">
             Updated {timeAgo(d.updatedAt)}
           </div>
         </Link>

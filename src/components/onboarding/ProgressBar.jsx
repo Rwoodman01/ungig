@@ -21,21 +21,21 @@ export default function ProgressBar({ currentStep }) {
               <div
                 className={clsx(
                   'h-1.5 flex-1 rounded-full transition',
-                  done || active ? 'bg-lilac' : 'bg-steel-700',
+                  done ? 'bg-sage' : active ? 'bg-green' : 'bg-border',
                 )}
               />
             </div>
           );
         })}
       </div>
-      <div className="flex justify-between mt-2 text-[11px] tracking-brand uppercase font-display">
+      <div className="flex justify-between mt-2 text-[11px] font-medium">
         {STEPS.map((step, i) => (
           <span
             key={step.key}
             className={clsx(
-              i === currentIndex && 'text-lilac',
-              i < currentIndex && 'text-silver',
-              i > currentIndex && 'text-steel',
+              i === currentIndex && 'text-green',
+              i < currentIndex && 'text-ink-primary',
+              i > currentIndex && 'text-ink-muted',
             )}
           >
             {step.label}

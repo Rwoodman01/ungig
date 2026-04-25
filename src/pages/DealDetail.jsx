@@ -80,9 +80,9 @@ export default function DealDetail() {
 
   if (loading) return <Spinner />;
   if (error) return <p className="text-red-400 text-sm">Error: {error.message}</p>;
-  if (!deal) return <EmptyState title="Deal not found" />;
+  if (!deal) return <EmptyState title="Exchange not found" />;
   if (!deal.participantIds?.includes(user.uid)) {
-    return <EmptyState title="Not authorized" description="This trade is private." />;
+    return <EmptyState title="Not authorized" description="This exchange is private." />;
   }
 
   // Engagement actions (accept/decline, schedule, complete, review) all
@@ -130,7 +130,7 @@ export default function DealDetail() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-display font-bold text-gold-400">Trade</h1>
+        <h1 className="text-xl font-display font-bold text-ink-primary">Exchange</h1>
         <StatusPill status={deal.status} />
       </div>
 
@@ -138,11 +138,11 @@ export default function DealDetail() {
         <div className="card p-4 flex items-center gap-3">
           <Avatar src={other.photoURL} name={other.displayName} size="sm" />
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium text-ink-50 truncate">
+            <div className="text-sm font-medium text-ink-primary truncate">
               {other.displayName}
             </div>
             {other.location ? (
-              <div className="text-xs text-ink-300 truncate">{other.location}</div>
+              <div className="text-xs text-ink-muted truncate">{other.location}</div>
             ) : null}
           </div>
         </div>
@@ -150,13 +150,13 @@ export default function DealDetail() {
 
       {!canEngage ? (
         <LockedAction>
-          You can read this trade. Engagement actions unlock once your
+          You can read this exchange. Engagement actions unlock once your
           culture call is complete.
         </LockedAction>
       ) : null}
 
       <section className="card p-4 space-y-2">
-        <h2 className="text-sm font-semibold text-ink-50">Your offer</h2>
+        <h2 className="text-sm font-semibold text-ink-primary">Your offer</h2>
         <textarea
           className="input min-h-[3rem]"
           placeholder="Describe what you'll provide."
@@ -165,23 +165,23 @@ export default function DealDetail() {
           onBlur={saveMyService}
           disabled={!canEngage}
         />
-        <div className="text-xs text-ink-300">
+        <div className="text-xs text-ink-muted">
           {savingField === myServiceField ? 'Saving...' : canEngage ? 'Saved on blur.' : 'Locked until approval.'}
         </div>
 
-        <div className="pt-3 mt-3 border-t border-navy-800">
-          <h3 className="text-sm font-semibold text-ink-50">
+        <div className="pt-3 mt-3 border-t border-border">
+          <h3 className="text-sm font-semibold text-ink-primary">
             {other?.displayName ?? 'Their'} offer
           </h3>
-          <p className="text-sm text-ink-100 mt-1">
-            {deal[theirServiceField] || <span className="text-ink-300 italic">Not yet described.</span>}
+          <p className="text-sm text-ink-secondary mt-1">
+            {deal[theirServiceField] || <span className="text-ink-muted italic">Not yet described.</span>}
           </p>
         </div>
       </section>
 
       {canSchedule ? (
         <section className="card p-4 space-y-2">
-          <h2 className="text-sm font-semibold text-ink-50">Schedule</h2>
+          <h2 className="text-sm font-semibold text-ink-primary">Schedule</h2>
           <div className="grid grid-cols-2 gap-2">
             <input
               type="date"
@@ -241,8 +241,12 @@ export default function DealDetail() {
       ) : null}
 
       {deal.status === DEAL_STATUS.COMPLETED || deal.status === DEAL_STATUS.REVIEWED ? (
-        <div className="card p-3 text-sm text-emerald-400">
-          Trade complete. Nice work.
+        <div className="card-cream p-4 text-sm text-ink-secondary flex items-center gap-3">
+          <img src="/giff/gift.png" alt="" className="h-10 w-10" />
+          <div>
+            <div className="font-semibold text-ink-primary">Exchange complete.</div>
+            <div className="text-ink-muted">Small acts. Big impact.</div>
+          </div>
         </div>
       ) : null}
 
@@ -259,7 +263,7 @@ export default function DealDetail() {
       ) : null}
 
       <section>
-        <h2 className="text-sm font-semibold text-ink-50 mb-2">Messages</h2>
+        <h2 className="text-sm font-semibold text-ink-primary mb-2">Messages</h2>
         <MessageThread dealId={deal.id} />
       </section>
     </div>

@@ -8,7 +8,7 @@ export default function TopBar({ title, showBack = false }) {
 
   return (
     <header
-      className="sticky top-0 z-30 bg-jet/90 backdrop-blur border-b border-steel-700"
+      className="sticky top-0 z-30 bg-surface/90 backdrop-blur border-b border-border"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="max-w-app mx-auto flex items-center gap-2 px-4 h-14">
@@ -26,11 +26,11 @@ export default function TopBar({ title, showBack = false }) {
         ) : null}
         <Link to="/" className="flex items-center">
           {title ? (
-            <span className="font-display tracking-brand uppercase text-silver text-xl">
+            <span className="font-display text-ink-primary text-xl font-bold">
               {title}
             </span>
           ) : (
-            <Wordmark size="md" />
+            <Wordmark size="md" withTagline={false} />
           )}
         </Link>
       </div>

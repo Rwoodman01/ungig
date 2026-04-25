@@ -3,14 +3,14 @@
 @tailwind utilities;
 
 /*
-  Ungig brand base styles.
-  Palette: jet / charcoal / steel / silver / lilac.
-  Typography: Anton (headings, all caps) + Montserrat (body).
+  Gifted brand base styles.
+  Light mode throughout: cream background, white cards, navy ink, green CTAs.
+  Manrope for everything except the wordmark (Fraunces Italic).
 */
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   html,
@@ -20,87 +20,102 @@
   }
 
   body {
-    @apply bg-jet text-silver font-sans antialiased;
+    @apply bg-bg text-ink-primary font-sans antialiased;
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  /* Brand headings: Anton, uppercase, wide tracking. */
+  /* Headings: Manrope, weight 700, no uppercase. */
   h1, h2, h3, h4 {
-    @apply font-display tracking-brand uppercase;
-    font-weight: 400; /* Anton has a single weight; 400 is the regular face. */
+    @apply font-display text-ink-primary;
+    font-weight: 700;
+    letter-spacing: -0.01em;
   }
 
-  /* Remove autofill blue on dark fields. */
+  /* Soften autofill on light fields. */
   input:-webkit-autofill {
-    -webkit-box-shadow: 0 0 0 1000px #1B1C20 inset;
-    -webkit-text-fill-color: #D5D7DC;
-    caret-color: #D5D7DC;
+    -webkit-box-shadow: 0 0 0 1000px #FFFFFF inset;
+    -webkit-text-fill-color: #0F1331;
+    caret-color: #0F1331;
   }
 }
 
 @layer components {
-  /* Buttons — pill shape, uppercase Anton-ish treatment on label. */
+  /* ── Buttons ──────────────────────────────────────────────────────── */
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3
-           font-semibold tracking-brand transition active:scale-[0.98]
+           font-semibold transition active:scale-[0.98]
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-primary {
-    @apply btn bg-silver text-jet hover:bg-white;
+    @apply btn bg-green text-white hover:bg-green-600
+           shadow-[0_1px_2px_rgba(15,19,49,0.06),0_8px_18px_rgba(27,127,79,0.18)];
   }
   .btn-secondary {
-    @apply btn bg-charcoal text-silver border border-steel hover:border-lilac;
+    @apply btn bg-surface text-ink-primary border border-border hover:border-green;
   }
   .btn-ghost {
-    @apply btn text-silver hover:bg-charcoal;
+    @apply btn text-ink-secondary hover:bg-cream;
   }
 
-  /* Form controls */
+  /* ── Form controls ────────────────────────────────────────────────── */
   .input {
-    @apply w-full rounded-xl bg-charcoal border border-steel-700
-           px-4 py-3 text-silver placeholder:text-silver-300
-           focus:outline-none focus:ring-2 focus:ring-lilac/50
-           focus:border-lilac;
+    @apply w-full rounded-2xl bg-surface border border-border
+           px-4 py-3 text-ink-primary placeholder:text-ink-muted
+           focus:outline-none focus:ring-2 focus:ring-green/30
+           focus:border-green;
   }
 
-  /* Cards */
+  /* ── Cards ────────────────────────────────────────────────────────── */
   .card {
-    @apply bg-charcoal border border-steel-700 rounded-xl2 shadow-card;
+    @apply bg-surface border border-border rounded-card shadow-card;
+  }
+  .card-cream {
+    @apply bg-cream border border-border rounded-card shadow-card;
+  }
+  .hero-card {
+    @apply bg-navyHero text-ink-inverse rounded-card shadow-card p-6;
   }
 
-  /* Chips / tags */
+  /* ── Chips / tags ─────────────────────────────────────────────────── */
   .chip {
     @apply inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs
-           font-medium bg-charcoal text-silver border border-steel-700;
-  }
-  .chip-gold {
-    /* Kept for backwards-compat with components still using this class —
-       now renders as the lilac accent chip. */
-    @apply chip bg-lilac/10 text-lilac-300 border-lilac/30;
+           font-medium bg-lavender-300 text-ink-secondary;
   }
   .chip-accent {
-    @apply chip bg-lilac/10 text-lilac-300 border-lilac/30;
+    @apply chip bg-sage-200 text-green-700;
+  }
+  /* Legacy class kept for components still calling it; renders as a warm
+     gold-on-cream chip in the Gifted palette. */
+  .chip-gold {
+    @apply chip bg-cream text-ink-secondary border border-gold/40;
   }
 
-  /* Mobile-first page container */
+  /* ── Layout ───────────────────────────────────────────────────────── */
   .screen {
     @apply max-w-app mx-auto w-full min-h-full flex flex-col;
   }
 
-  /* Brand wordmark — used in TopBar, Landing, Welcome */
+  /* ── Brand surfaces ───────────────────────────────────────────────── */
   .wordmark {
-    @apply font-display tracking-brand uppercase text-silver;
+    @apply font-wordmark italic text-ink-primary;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    line-height: 1;
   }
-
-  /* Tagline block */
   .tagline {
-    @apply text-xs tracking-brand uppercase text-silver-300
-           font-medium;
+    @apply font-sans text-ink-muted uppercase font-medium;
+    letter-spacing: 0.18em;
+  }
+  .auth-footer {
+    @apply font-sans text-ink-muted text-[11px] font-semibold uppercase;
+    letter-spacing: 0.14em;
   }
 
-  /* Footer line used across auth screens */
-  .auth-footer {
-    @apply text-[11px] tracking-[0.14em] uppercase text-steel font-display;
+  /* ── Bottom-nav center FAB (Give) ────────────────────────────────── */
+  .fab-give {
+    @apply h-14 w-14 rounded-full bg-green text-white flex items-center
+           justify-center shadow-fab ring-4 ring-bg -mt-7 transition
+           active:scale-95 hover:bg-green-600;
   }
 }

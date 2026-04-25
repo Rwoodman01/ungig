@@ -34,6 +34,17 @@ export default function TopBar({ title, showBack = false }) {
             <Wordmark size="md" withTagline={false} />
           )}
         </Link>
+        <Link
+          to="/bulletin"
+          aria-label="Bulletin board"
+          className="p-2 rounded-full text-ink-secondary hover:bg-cream"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="5" y="4" width="14" height="17" rx="2" />
+            <path strokeLinecap="round" d="M9 4v2h6V4" />
+            <path strokeLinecap="round" d="M9 10h6M9 14h6M9 18h4" />
+          </svg>
+        </Link>
         <NotificationBell />
       </div>
     </header>

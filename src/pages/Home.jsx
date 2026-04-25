@@ -6,6 +6,7 @@ import Tagline from '../components/brand/Tagline.jsx';
 import { MEMBER_STATUS } from '../lib/constants.js';
 import InstallPrompt from '../components/pwa/InstallPrompt.jsx';
 import { useMatches } from '../hooks/useMatches.js';
+import BulletinHomeCard from '../components/bulletin/BulletinHomeCard.jsx';
 
 // Signed-in dashboard (tab: Home). Intentionally spare — surface next actions
 // rather than info overload.
@@ -66,6 +67,8 @@ export default function Home() {
           Find your match
         </Link>
       </div>
+
+      <BulletinHomeCard userDoc={userDoc} />
 
       <div className="grid grid-cols-2 gap-3">
         <Link to="/matches" className="card p-4 text-center">

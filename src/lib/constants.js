@@ -104,6 +104,59 @@ export const NOTIFICATION_TYPES = Object.freeze({
   REVIEWS_CLOSED: 'reviews_closed',
   MATCH: 'match',
   BADGE_EARNED: 'badge_earned',
+  POST_INTEREST: 'post_interest',
+});
+
+// Bulletin board.
+export const POST_TYPES = Object.freeze({
+  OFFERING: 'offering',
+  LOOKING_FOR: 'looking_for',
+  COMMUNITY: 'community',
+});
+
+export const POST_TYPE_META = {
+  [POST_TYPES.OFFERING]: {
+    label: 'Offering',
+    accent: 'green',
+    helper: 'Something you can give.',
+  },
+  [POST_TYPES.LOOKING_FOR]: {
+    label: 'Looking For',
+    accent: 'coral',
+    helper: 'Something you need help with.',
+  },
+  [POST_TYPES.COMMUNITY]: {
+    label: 'Community',
+    accent: 'gold',
+    helper: 'A note for the neighborhood.',
+  },
+};
+
+export const POST_AVAILABILITY = Object.freeze({
+  THIS_WEEK: 'this_week',
+  THIS_MONTH: 'this_month',
+  FLEXIBLE: 'flexible',
+});
+
+export const POST_AVAILABILITY_LABEL = {
+  [POST_AVAILABILITY.THIS_WEEK]: 'This Week',
+  [POST_AVAILABILITY.THIS_MONTH]: 'This Month',
+  [POST_AVAILABILITY.FLEXIBLE]: 'Flexible',
+};
+
+export const POST_LIMITS = Object.freeze({
+  WHAT_MAX: 80,
+  EXCHANGE_MAX: 80,
+  DETAILS_MAX: 300,
+  ACTIVE_DAYS: 30,
+  AUTO_HIDE_FLAGS: 3,
+  MAX_ACTIVE_POSTS_PER_USER: 5,
+  MIN_TRADES_TO_POST: 1,
+});
+
+export const POST_STATUS = Object.freeze({
+  ACTIVE: 'active',
+  HIDDEN: 'hidden',
 });
 
 /**
@@ -157,6 +210,13 @@ export function getNotificationCopy(type, payload = {}) {
         message: `You earned ${badgeLabel}!`,
         link: '/me',
       };
+    case NOTIFICATION_TYPES.POST_INTEREST: {
+      const what = payload.postWhat ? `: "${payload.postWhat}"` : '';
+      return {
+        message: `${name} is interested in your post${what}`,
+        link: payload.postId ? `/bulletin/${payload.postId}` : '/bulletin',
+      };
+    }
     default:
       return { message: 'You have a new notification.', link: '/' };
   }

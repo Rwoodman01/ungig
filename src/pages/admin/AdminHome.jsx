@@ -30,6 +30,12 @@ export default function AdminHome() {
             Moderate flagged reviews and award Giff&apos;s Pick.
           </div>
         </Link>
+        <Link to="/admin/bulletin" className="card p-4 hover:border-green/40 transition">
+          <div className="font-semibold text-ink-primary">Bulletin moderation</div>
+          <div className="text-xs text-ink-muted mt-1">
+            Review flagged bulletin posts.
+          </div>
+        </Link>
       </div>
     </div>
   );

@@ -251,5 +251,71 @@ service cloud.firestore {
         && request.auth.uid in resource.data.participantIds;
       allow create, update, delete: if isAdmin();
     }
+
+    match /posts/{postId} {
+      function isApprovedTrader(uid) {
+        let u = get(/databases/$(database)/documents/users/$(uid)).data;
+        return u.status == 'approved' && u.tradeCount >= 1;
+      }
+
+      function validNewPost(d) {
+        return d.type in ['offering', 'looking_for', 'community']
+          && d.availability in ['this_week', 'this_month', 'flexible']
+          && d.status == 'active'
+          && d.flagCount == 0
+          && d.interestCount == 0
+          && d.what is string && d.what.size() > 0 && d.what.size() <= 80
+          && d.exchange is string && d.exchange.size() <= 80
+          && d.details is string && d.details.size() <= 300
+          && d.location is string && d.location.size() > 0 && d.location.size() <= 80
+          && d.locationKey is string && d.locationKey.size() > 0
+          && d.authorDisplayName is string
+          && d.authorPhotoURL is string;
+      }
+
+      // Anyone signed in can read active posts; author and admin can also see
+      // their own hidden posts (for the moderation review flow).
+      allow read: if isSignedIn()
+        && (
+          resource.data.status == 'active'
+          || request.auth.uid == resource.data.authorId
+          || isAdmin()
+        );
+
+      allow create: if isSignedIn()
+        && isApprovedTrader(request.auth.uid)
+        && request.resource.data.authorId == request.auth.uid
+        && validNewPost(request.resource.data);
+
+      // Author may not edit posts directly (keeps the wall honest); admin can
+      // flip status for moderation. Cloud Functions use the admin SDK and
+      // bypass these rules to maintain flagCount/interestCount.
+      allow update: if isAdmin();
+
+      allow delete: if isSignedIn()
+        && (request.auth.uid == resource.data.authorId || isAdmin());
+
+      match /interests/{uid} {
+        // Author and the interested user can read; admin too.
+        allow read: if isSignedIn()
+          && (
+            request.auth.uid == uid
+            || request.auth.uid == get(/databases/$(database)/documents/posts/$(postId)).data.authorId
+            || isAdmin()
+          );
+        allow create, update: if isSignedIn()
+          && request.auth.uid == uid
+          && request.resource.data.uid == uid;
+        allow delete: if isSelf(uid) || isAdmin();
+      }
+
+      match /flags/{uid} {
+        allow read: if isAdmin();
+        allow create: if isSignedIn()
+          && request.auth.uid == uid
+          && request.resource.data.uid == uid;
+        allow update, delete: if false;
+      }
+    }
   }
 }

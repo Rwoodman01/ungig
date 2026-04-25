@@ -1,10 +1,16 @@
-const { onDocumentWritten } = require('firebase-functions/v2/firestore');
+const {
+  onDocumentCreated,
+  onDocumentDeleted,
+  onDocumentWritten,
+} = require('firebase-functions/v2/firestore');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
 initializeApp();
 
 const db = getFirestore();
+
+const POST_FLAG_HIDE_THRESHOLD = 3;
 
 function matchIdFor(a, b) {
   return [a, b].sort().join('_');
@@ -72,3 +78,71 @@ exports.onSwipeWritten = onDocumentWritten('users/{uid}/swipes/{targetUid}', asy
     writeNotification({ recipientId: targetUid, fromUid: uid, otherName: uidName, matchId }),
   ]);
 });
+
+// Bulletin board ─────────────────────────────────────────────────────────────
+//
+// Aggregate counts and auto-hide on flag pile-ups. The client never writes to
+// posts.flagCount / posts.interestCount directly; rules block that.
+
+exports.onBulletinFlagWritten = onDocumentCreated(
+  'posts/{postId}/flags/{flagId}',
+  async (event) => {
+    const { postId } = event.params;
+    const postRef = db.doc(`posts/${postId}`);
+
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(postRef);
+      if (!snap.exists) return;
+      const flagsSnap = await db.collection(`posts/${postId}/flags`).count().get();
+      const flagCount = flagsSnap.data().count ?? 0;
+      const update = {
+        flagCount,
+        updatedAt: FieldValue.serverTimestamp(),
+      };
+      if (flagCount >= POST_FLAG_HIDE_THRESHOLD && snap.data().status === 'active') {
+        update.status = 'hidden';
+      }
+      tx.update(postRef, update);
+    });
+  },
+);
+
+exports.onBulletinInterestWritten = onDocumentWritten(
+  'posts/{postId}/interests/{uid}',
+  async (event) => {
+    const { postId } = event.params;
+    const before = event.data?.before;
+    const after = event.data?.after;
+    const becameNew = !before?.exists && after?.exists;
+    const wasDeleted = before?.exists && !after?.exists;
+    if (!becameNew && !wasDeleted) return;
+
+    const interestSnap = await db.collection(`posts/${postId}/interests`).count().get();
+    await db.doc(`posts/${postId}`).set(
+      {
+        interestCount: interestSnap.data().count ?? 0,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+  },
+);
+
+// Keep aggregate counts honest if a moderator deletes a flag manually.
+exports.onBulletinFlagDeleted = onDocumentDeleted(
+  'posts/{postId}/flags/{flagId}',
+  async (event) => {
+    const { postId } = event.params;
+    const postRef = db.doc(`posts/${postId}`);
+    const snap = await postRef.get();
+    if (!snap.exists) return;
+    const flagsSnap = await db.collection(`posts/${postId}/flags`).count().get();
+    await postRef.set(
+      {
+        flagCount: flagsSnap.data().count ?? 0,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+  },
+);

@@ -39,26 +39,123 @@ export const DEAL_STATUS = Object.freeze({
   DECLINED: 'declined',
 });
 
+/** Skill tag chips for reviews (max 3 per review). */
+export const SKILL_TAGS = Object.freeze([
+  'Reliable',
+  'Skilled',
+  'Communicative',
+  'Generous',
+  'Went Above and Beyond',
+  'Punctual',
+  'Professional',
+  'Friendly',
+  'Creative',
+  'Patient',
+]);
+
+export const REVIEW_LIMITS = Object.freeze({
+  WRITTEN_MIN: 20,
+  WRITTEN_MAX: 600,
+  SKILL_TAGS_MAX: 3,
+  REMINDER_HOURS: 72,
+  AUTO_CLOSE_DAYS: 7,
+  UNREVIEWED_WARNING_THRESHOLD: 3,
+  FLAG_HIDE_THRESHOLD: 3,
+});
+
 export const BADGES = Object.freeze({
   TRADE_COMPLETE: 'trade_complete',
   FIRST_TRADE: 'first_trade',
+  /** Legacy — no longer auto-awarded; kept for existing user docs. */
   FIVE_TRADES: 'five_trades',
+  /** Legacy — no longer auto-awarded. */
   TEN_TRADES: 'ten_trades',
   COMMUNITY_BUILDER: 'community_builder',
+  FIVE_STAR_GIVER: 'five_star_giver',
+  MOST_RELIABLE: 'most_reliable',
+  COMEBACK_KID: 'comeback_kid',
+  COMMUNITY_PILLAR: 'community_pillar',
+  GIFFS_PICK: 'giffs_pick',
 });
 
 export const BADGE_META = {
-  [BADGES.TRADE_COMPLETE]: { label: 'Trade Complete', emoji: '✓' },
-  [BADGES.FIRST_TRADE]: { label: 'First Trade', emoji: '1' },
-  [BADGES.FIVE_TRADES]: { label: '5 Trades', emoji: '5' },
-  [BADGES.TEN_TRADES]: { label: '10 Trades', emoji: '10' },
+  [BADGES.TRADE_COMPLETE]: { label: 'Gift complete', emoji: '✓' },
+  [BADGES.FIRST_TRADE]: { label: 'First gift', emoji: '1' },
+  [BADGES.FIVE_TRADES]: { label: '5 gifts', emoji: '5' },
+  [BADGES.TEN_TRADES]: { label: '10 gifts', emoji: '10' },
   [BADGES.COMMUNITY_BUILDER]: { label: 'Community Builder', emoji: '★' },
+  [BADGES.FIVE_STAR_GIVER]: { label: '5-Star Giver', emoji: '⭐' },
+  [BADGES.MOST_RELIABLE]: { label: 'Most Reliable', emoji: '🛡' },
+  [BADGES.COMEBACK_KID]: { label: 'Comeback Kid', emoji: '↗' },
+  [BADGES.COMMUNITY_PILLAR]: { label: 'Community Pillar', emoji: '🏛' },
+  [BADGES.GIFFS_PICK]: { label: "Giff's Pick", emoji: '🐸' },
 };
+
+export const NOTIFICATION_TYPES = Object.freeze({
+  TRADE_PROPOSED: 'trade_proposed',
+  TRADE_ACCEPTED: 'trade_accepted',
+  TRADE_COMPLETED: 'trade_completed',
+  REVIEW_RECEIVED: 'review_received',
+  REVIEW_REMINDER: 'review_reminder',
+  REVIEWS_CLOSED: 'reviews_closed',
+  BADGE_EARNED: 'badge_earned',
+});
+
+/**
+ * Build notification message + deep link for UI.
+ * @param {string} type — NOTIFICATION_TYPES value
+ * @param {Record<string, string>} payload — e.g. otherName, dealId, badgeLabel
+ */
+export function getNotificationCopy(type, payload = {}) {
+  const name = payload.otherName ?? 'Someone';
+  const dealId = payload.dealId ?? '';
+  const badgeLabel = payload.badgeLabel ?? 'a badge';
+
+  switch (type) {
+    case NOTIFICATION_TYPES.TRADE_PROPOSED:
+      return {
+        message: `${name} wants to exchange with you.`,
+        link: dealId ? `/deals/${dealId}` : '/deals',
+      };
+    case NOTIFICATION_TYPES.TRADE_ACCEPTED:
+      return {
+        message: `${name} accepted your exchange.`,
+        link: dealId ? `/deals/${dealId}` : '/deals',
+      };
+    case NOTIFICATION_TYPES.TRADE_COMPLETED:
+      return {
+        message: `Your exchange with ${name} is done! Leave your review so they can trade again.`,
+        link: dealId ? `/deals/${dealId}` : '/deals',
+      };
+    case NOTIFICATION_TYPES.REVIEW_REMINDER:
+      return {
+        message: `Giff is waiting… ${name} already left their review. Your turn.`,
+        link: dealId ? `/deals/${dealId}/review` : '/deals',
+      };
+    case NOTIFICATION_TYPES.REVIEW_RECEIVED:
+      return {
+        message: `Your review from ${name} is live. See what they said about you.`,
+        link: payload.memberId ? `/members/${payload.memberId}` : '/me',
+      };
+    case NOTIFICATION_TYPES.REVIEWS_CLOSED:
+      return {
+        message: 'This exchange is complete. Reviews are now closed.',
+        link: dealId ? `/deals/${dealId}` : '/deals',
+      };
+    case NOTIFICATION_TYPES.BADGE_EARNED:
+      return {
+        message: `You earned ${badgeLabel}!`,
+        link: '/me',
+      };
+    default:
+      return { message: 'You have a new notification.', link: '/' };
+  }
+}
 
 // Copy limits (match the spec).
 export const LIMITS = Object.freeze({
   BIO_MAX: 150,
-  REVIEW_MAX: 200,
+  REVIEW_MAX: REVIEW_LIMITS.WRITTEN_MAX,
   TALENTS_MAX: 3,
   SERVICES_MAX: 3,
   PROOF_PHOTOS_MAX: 6,

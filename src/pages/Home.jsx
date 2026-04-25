@@ -4,6 +4,7 @@ import Avatar from '../components/ui/Avatar.jsx';
 import Wordmark from '../components/brand/Wordmark.jsx';
 import Tagline from '../components/brand/Tagline.jsx';
 import { MEMBER_STATUS } from '../lib/constants.js';
+import InstallPrompt from '../components/pwa/InstallPrompt.jsx';
 
 // Signed-in dashboard (tab: Home). Intentionally spare — surface next actions
 // rather than info overload.
@@ -13,6 +14,7 @@ export default function Home() {
 
   return (
     <div className="space-y-6">
+      <InstallPrompt />
       <div className="hero-card">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">

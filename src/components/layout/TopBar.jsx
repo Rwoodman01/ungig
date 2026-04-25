@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Wordmark from '../brand/Wordmark.jsx';
+import NotificationBell from '../notifications/NotificationBell.jsx';
 
 export default function TopBar({ title, showBack = false }) {
   const location = useLocation();
@@ -24,15 +25,16 @@ export default function TopBar({ title, showBack = false }) {
             </svg>
           </button>
         ) : null}
-        <Link to="/" className="flex items-center">
+        <Link to="/" className="flex items-center min-w-0 flex-1">
           {title ? (
-            <span className="font-display text-ink-primary text-xl font-bold">
+            <span className="font-display text-ink-primary text-xl font-bold truncate">
               {title}
             </span>
           ) : (
             <Wordmark size="md" withTagline={false} />
           )}
         </Link>
+        <NotificationBell />
       </div>
     </header>
   );

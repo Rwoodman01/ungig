@@ -26,11 +26,14 @@ import MemberProfile from './pages/MemberProfile.jsx';
 import Deals from './pages/Deals.jsx';
 import DealDetail from './pages/DealDetail.jsx';
 import MyProfile from './pages/MyProfile.jsx';
+import Notifications from './pages/Notifications.jsx';
+import ReviewWizard from './pages/reviews/ReviewWizard.jsx';
 
 import AdminHome from './pages/admin/AdminHome.jsx';
 import PendingMembers from './pages/admin/PendingMembers.jsx';
 import AllDeals from './pages/admin/AllDeals.jsx';
 import AllMembers from './pages/admin/AllMembers.jsx';
+import AdminReviews from './pages/admin/Reviews.jsx';
 
 import { useAuth } from './contexts/AuthContext.jsx';
 import Spinner from './components/ui/Spinner.jsx';
@@ -74,12 +77,14 @@ export default function App() {
           {/* Fully onboarded — wrapped in AppShell chrome */}
           <Route element={<ProtectedRoute />}>
             <Route element={<StatusGate />}>
+              <Route path="/deals/:dealId/review" element={<ReviewWizard />} />
               <Route element={<AppShell />}>
                 <Route path="/" element={<Home />} />
                 <Route path="/browse" element={<Directory />} />
                 <Route path="/members/:memberId" element={<MemberProfile />} />
                 <Route path="/deals" element={<Deals />} />
                 <Route path="/deals/:dealId" element={<DealDetail />} />
+                <Route path="/notifications" element={<Notifications />} />
                 <Route path="/me" element={<MyProfile />} />
 
                 {/* Admin */}
@@ -88,6 +93,7 @@ export default function App() {
                   <Route path="/admin/pending" element={<PendingMembers />} />
                   <Route path="/admin/deals" element={<AllDeals />} />
                   <Route path="/admin/members" element={<AllMembers />} />
+                  <Route path="/admin/reviews" element={<AdminReviews />} />
                 </Route>
               </Route>
             </Route>

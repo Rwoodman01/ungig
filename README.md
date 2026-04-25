@@ -165,7 +165,7 @@ src/
     auth/  (ProtectedRoute, StatusGate, AdminRoute)
     layout/  (AppShell, TopBar, BottomNav)
     ui/  (Avatar, Badge, EmptyState, PhotoUploader, Spinner, TagInput)
-    deals/  (MessageThread, ReviewForm)
+    deals/  (MessageThread, review flow at `/deals/:dealId/review`)
   lib/  (constants, format, badges, deals, storage)
   pages/
     Landing, SignIn, SignUp

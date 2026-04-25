@@ -24,6 +24,12 @@ export default function AdminHome() {
             See badges, trade counts, and statuses.
           </div>
         </Link>
+        <Link to="/admin/reviews" className="card p-4 hover:border-green/40 transition">
+          <div className="font-semibold text-ink-primary">Reviews &amp; flags</div>
+          <div className="text-xs text-ink-muted mt-1">
+            Moderate flagged reviews and award Giff&apos;s Pick.
+          </div>
+        </Link>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 
 import { useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { collection, doc, orderBy, query, where } from 'firebase/firestore';
+import { collection, doc, query, where } from 'firebase/firestore';
 import { useDocument, useCollection } from 'react-firebase-hooks/firestore';
 import { db } from '../firebase.js';
 import Avatar from '../components/ui/Avatar.jsx';
@@ -11,34 +11,47 @@ import Badge from '../components/ui/Badge.jsx';
 import Spinner from '../components/ui/Spinner.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import LockedAction from '../components/ui/LockedAction.jsx';
+import ReviewSummaryBar from '../components/reviews/ReviewSummaryBar.jsx';
+import ReviewTagCloud from '../components/reviews/ReviewTagCloud.jsx';
+import ReviewsList from '../components/reviews/ReviewsList.jsx';
+import ReviewsEmptyState from '../components/reviews/ReviewsEmptyState.jsx';
+import UnreviewedFlag from '../components/reviews/UnreviewedFlag.jsx';
+import ReviewWarningBanner from '../components/reviews/ReviewWarningBanner.jsx';
 import { formatDate } from '../lib/format.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { createDeal } from '../lib/deals.js';
+import { aggregateReviewStats, countStaleReviewQueueItems } from '../lib/reviewStats.js';
 
-function Stars({ rating }) {
-  return (
-    <span className="text-gold text-sm" aria-label={`${rating} of 5 stars`}>
-      {'★'.repeat(rating)}
-      <span className="text-ink-muted">{'★'.repeat(Math.max(0, 5 - rating))}</span>
-    </span>
-  );
+function sortReviewsDesc(reviews) {
+  return [...reviews].sort((a, b) => {
+    const ta = a.submittedAt?.toMillis?.() ?? a.createdAt?.toMillis?.() ?? 0;
+    const tb = b.submittedAt?.toMillis?.() ?? b.createdAt?.toMillis?.() ?? 0;
+    return tb - ta;
+  });
 }
 
 export default function MemberProfile() {
   const { memberId } = useParams();
   const navigate = useNavigate();
-  const { user, canEngage } = useAuth();
+  const {
+    user,
+    canEngage,
+    hasPendingReviews,
+    firstPendingDealId,
+  } = useAuth();
   const [memberSnap, loading] = useDocument(doc(db, 'users', memberId));
 
   const reviewsQuery = useMemo(
-    () => query(
-      collection(db, 'reviews'),
-      where('revieweeId', '==', memberId),
-      orderBy('createdAt', 'desc'),
-    ),
+    () => query(collection(db, 'reviews'), where('revieweeId', '==', memberId)),
     [memberId],
   );
   const [reviewsSnap] = useCollection(reviewsQuery);
+
+  const queueQuery = useMemo(
+    () => collection(db, 'users', memberId, 'reviewQueue'),
+    [memberId],
+  );
+  const [queueSnap] = useCollection(queueQuery);
 
   if (loading) return <Spinner />;
   if (!memberSnap?.exists()) {
@@ -47,7 +60,13 @@ export default function MemberProfile() {
 
   const member = { id: memberSnap.id, ...memberSnap.data() };
   const isSelf = user?.uid === member.id;
-  const reviews = reviewsSnap?.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [];
+  const rawReviews = reviewsSnap?.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [];
+  const visibleReviews = rawReviews.filter((r) => r.visibleAt != null && r.moderationStatus !== 'removed');
+  const reviews = sortReviewsDesc(visibleReviews);
+  const stats = aggregateReviewStats(visibleReviews);
+
+  const queueItems = queueSnap?.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [];
+  const staleUnreviewed = countStaleReviewQueueItems(queueItems);
 
   const requestTrade = async () => {
     if (!user || isSelf) return;
@@ -55,9 +74,11 @@ export default function MemberProfile() {
     navigate(`/deals/${dealId}`);
   };
 
+  const firstName = member.displayName?.split(/\s+/)[0] ?? 'this member';
+
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-4">
+      <div className="flex flex-wrap items-start gap-3">
         <Avatar src={member.photoURL} name={member.displayName} size="xl" />
         <div className="flex-1 min-w-0">
           <h1 className="text-xl font-display font-bold text-ink-primary truncate">
@@ -69,12 +90,17 @@ export default function MemberProfile() {
           <p className="text-xs text-ink-muted mt-1">
             Member since {formatDate(member.memberSince)}
           </p>
-          <div className="mt-2 flex gap-3 text-xs text-ink-secondary">
-            <span><strong className="text-green">{member.tradeCount ?? 0}</strong> gifts</span>
-            <span><strong className="text-green">{member.badges?.length ?? 0}</strong> badges</span>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <div className="flex gap-3 text-xs text-ink-secondary">
+              <span><strong className="text-green">{member.tradeCount ?? 0}</strong> gifts</span>
+              <span><strong className="text-green">{member.badges?.length ?? 0}</strong> badges</span>
+            </div>
+            <UnreviewedFlag count={staleUnreviewed} />
           </div>
         </div>
       </div>
+
+      <ReviewWarningBanner unreviewedCount={staleUnreviewed} />
 
       {member.bio ? (
         <p className="text-sm text-ink-secondary leading-relaxed">{member.bio}</p>
@@ -133,24 +159,16 @@ export default function MemberProfile() {
         </section>
       ) : null}
 
-      <section>
-        <h2 className="text-sm font-semibold text-ink-primary mb-2">Reviews</h2>
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-ink-primary">Reviews</h2>
         {reviews.length === 0 ? (
-          <p className="text-xs text-ink-muted">No reviews yet.</p>
+          <ReviewsEmptyState memberName={firstName} />
         ) : (
-          <div className="space-y-3">
-            {reviews.map((r) => (
-              <div key={r.id} className="card p-4">
-                <div className="flex items-center justify-between">
-                  <Stars rating={r.rating} />
-                  <span className="text-xs text-ink-muted">{formatDate(r.createdAt)}</span>
-                </div>
-                {r.comment ? (
-                  <p className="text-sm text-ink-secondary mt-2">{r.comment}</p>
-                ) : null}
-              </div>
-            ))}
-          </div>
+          <>
+            <ReviewSummaryBar memberName={firstName} stats={stats} />
+            <ReviewTagCloud tagCounts={stats.tagCounts} />
+            <ReviewsList reviews={reviews} />
+          </>
         )}
       </section>
 
@@ -158,6 +176,16 @@ export default function MemberProfile() {
         <Link to="/me" className="btn-secondary w-full">
           Edit your profile
         </Link>
+      ) : canEngage && hasPendingReviews ? (
+        <LockedAction>
+          <strong className="text-green">Propose Trade</strong>
+          {' — '}finish your pending review first.{' '}
+          {firstPendingDealId ? (
+            <Link to={`/deals/${firstPendingDealId}/review`} className="text-green font-semibold underline">
+              Leave review
+            </Link>
+          ) : null}
+        </LockedAction>
       ) : canEngage ? (
         <button className="btn-primary w-full" onClick={requestTrade}>
           Propose Trade

@@ -1,16 +1,6 @@
 rules_version = '2';
 
-// Ungig Firestore security rules.
-//
-// Guiding principles:
-//   - A signed-in user can always read and update their own user doc
-//     (but cannot set their own `status`, `role`, `tradeCount`, or `badges`).
-//   - Approved members are visible to every other signed-in user.
-//   - Deals and their messages/reviews are only visible to participants.
-//   - Admins (email allowlist) have broad read + moderation access.
-//
-// NOTE: the ADMIN_EMAILS list below is duplicated from src/lib/constants.js.
-// In phase 2 we'll replace both with Firebase Auth custom claims.
+// Gifted Firestore security rules.
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -25,14 +15,11 @@ service cloud.firestore {
       return isSignedIn()
         && request.auth.token.email != null
         && request.auth.token.email.lower() in [
-          // Keep in sync with src/lib/constants.js ADMIN_EMAILS.
           'rwoodman01@gmail.com',
           'michael.whitaker1490@gmail.com',
         ];
     }
 
-    // Fields members can change on themselves. `status`, `role`, `badges`,
-    // `tradeCount`, and `connections` are server/admin-controlled.
     function selfUpdatableFields() {
       return [
         'displayName', 'email', 'photoURL', 'bio', 'location',
@@ -43,12 +30,34 @@ service cloud.firestore {
         'standardsAgreed', 'standardsAgreedAt',
         'profileComplete',
         'referredBy',
-        // `status` flips to 'pending' when the application is submitted.
-        // Anything beyond 'pending' (approved/rejected) is admin-only —
-        // we keep that control in the update condition below.
         'status', 'applicationSubmittedAt',
         'updatedAt',
       ];
+    }
+
+    function isTradeCompletionBump(uid) {
+      let a = request.resource.data;
+      let b = resource.data;
+      return a.diff(b).affectedKeys().hasOnly(['tradeCount', 'connections', 'badges', 'updatedAt'])
+        && a.tradeCount == b.tradeCount + 1
+        && a.connections.size() == b.connections.size() + 1
+        && a.connections.hasAll(b.connections)
+        && a.badges.hasAll(b.badges)
+        && (
+          (request.auth.uid != uid
+            && !b.connections.hasAny([request.auth.uid])
+            && a.connections.hasAny([request.auth.uid]))
+          || request.auth.uid == uid
+        );
+    }
+
+    function dealParticipants(dealId) {
+      return get(/databases/$(database)/documents/deals/$(dealId)).data.participantIds;
+    }
+
+    function isParticipantOfDeal(dealId) {
+      return isSignedIn()
+        && request.auth.uid in dealParticipants(dealId);
     }
 
     match /users/{uid} {
@@ -62,9 +71,6 @@ service cloud.firestore {
         && request.resource.data.tradeCount == 0
         && request.resource.data.badges.size() == 0;
 
-      // Self-update: whitelist of fields + members can only move their own
-      // `status` from 'unpaid' -> 'pending' (the application submission).
-      // Admins can change status freely.
       allow update: if isAdmin()
         || (
           isSelf(uid)
@@ -77,9 +83,37 @@ service cloud.firestore {
               && request.resource.data.status == 'pending'
             )
           )
-        );
+        )
+        || isTradeCompletionBump(uid);
 
       allow delete: if isAdmin();
+
+      match /reviewQueue/{dealId} {
+        allow read: if isSelf(uid)
+          || isAdmin()
+          || (isSignedIn()
+              && get(/databases/$(database)/documents/users/$(uid)).data.status == 'approved');
+
+        allow create, update: if isParticipantOfDeal(dealId)
+          && uid in dealParticipants(dealId)
+          && request.resource.data.dealId == dealId;
+
+        allow delete: if isSelf(uid);
+      }
+
+      match /notifications/{nid} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create: if isSignedIn()
+          && request.resource.data.recipientId == uid
+          && request.resource.data.fromUid == request.auth.uid
+          && request.resource.data.type is string
+          && request.resource.data.message is string
+          && request.resource.data.link is string
+          && request.resource.data.readAt == null;
+        allow update: if isSelf(uid)
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt']);
+        allow delete: if isSelf(uid) || isAdmin();
+      }
     }
 
     match /deals/{dealId} {
@@ -114,19 +148,87 @@ service cloud.firestore {
       }
 
       match /reviews/{reviewerId} {
-        allow read: if isSignedIn();
+        allow read: if isAdmin()
+          || (isSignedIn()
+              && request.auth.uid in get(/databases/$(database)/documents/deals/$(dealId)).data.participantIds);
         allow create: if isSelf(reviewerId)
           && request.auth.uid in get(/databases/$(database)/documents/deals/$(dealId)).data.participantIds;
         allow update, delete: if false;
       }
     }
 
-    // Top-level reviews mirror (used for aggregate queries by revieweeId).
     match /reviews/{reviewId} {
-      allow read: if isSignedIn();
+      function dealD() {
+        return get(/databases/$(database)/documents/deals/$(resource.data.dealId)).data;
+      }
+      function dealDReq() {
+        return get(/databases/$(database)/documents/deals/$(request.resource.data.dealId)).data;
+      }
+
+      allow read: if isAdmin()
+        || (isSignedIn() && resource.data.reviewerId == request.auth.uid)
+        || (isSignedIn()
+            && resource.data.visibleAt != null
+            && (!('suppressed' in resource.data) || resource.data.suppressed == false)
+            && (!('moderationStatus' in resource.data)
+                || resource.data.moderationStatus != 'removed'));
+
       allow create: if isSignedIn()
-        && request.resource.data.reviewerId == request.auth.uid;
-      allow update, delete: if false;
+        && request.resource.data.reviewerId == request.auth.uid
+        && request.resource.data.dealId is string
+        && request.resource.data.revieweeId is string
+        && request.resource.data.starRating is int
+        && request.resource.data.starRating >= 1
+        && request.resource.data.starRating <= 5
+        && request.resource.data.showedUp is bool
+        && request.resource.data.wouldTradeAgain is bool
+        && request.resource.data.writtenReview is string
+        && request.resource.data.writtenReview.size() >= 20
+        && request.resource.data.writtenReview.size() <= 600
+        && request.resource.data.skillTags is list
+        && request.resource.data.skillTags.size() <= 3
+        && request.resource.data.flags is list
+        && request.resource.data.flags.size() == 0
+        && request.resource.data.flagged == false
+        && request.resource.data.suppressed == false
+        && (!('visibleAt' in request.resource.data)
+            || request.resource.data.visibleAt == null)
+        && request.resource.data.exchangeOfferInitiator is string
+        && request.resource.data.exchangeOfferReceiver is string
+        && request.resource.data.exchangeOfferInitiator.size() <= 120
+        && request.resource.data.exchangeOfferReceiver.size() <= 120
+        && request.auth.uid in dealDReq().participantIds
+        && (
+          request.auth.uid == dealDReq().initiatorId
+            && request.resource.data.revieweeId == dealDReq().receiverId
+          || request.auth.uid == dealDReq().receiverId
+            && request.resource.data.revieweeId == dealDReq().initiatorId
+        );
+
+      allow update: if isAdmin()
+        || (
+          isSignedIn()
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['flags', 'flagged', 'suppressed', 'updatedAt'])
+          && resource.data.reviewerId != request.auth.uid
+          && request.resource.data.flags.hasAll(
+               'flags' in resource.data ? resource.data.flags : [])
+          && (
+            (!('flags' in resource.data) && request.resource.data.flags.size() == 1)
+            || ('flags' in resource.data
+              && request.resource.data.flags.size() == resource.data.flags.size() + 1)
+          )
+          && request.resource.data.flags.hasAny([request.auth.uid])
+          && (!('flags' in resource.data) || !resource.data.flags.hasAny([request.auth.uid]))
+        )
+        || (
+          isSignedIn()
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['visibleAt'])
+          && request.auth.uid in dealD().participantIds
+          && (!('visibleAt' in resource.data) || resource.data.visibleAt == null)
+        );
+
+      allow delete: if isAdmin();
     }
   }
 }

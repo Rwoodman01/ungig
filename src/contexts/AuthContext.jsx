@@ -24,7 +24,9 @@ import {
 } from 'firebase/firestore';
 
 import { auth, db, googleProvider } from '../firebase.js';
-import { ADMIN_EMAILS, MEMBER_STATUS } from '../lib/constants.js';
+import { ADMIN_EMAILS, MEMBER_STATUS, REVIEW_LIMITS } from '../lib/constants.js';
+import { subscribeReviewQueue } from '../lib/reviewQueue.js';
+import { runReviewReminders } from '../lib/reviewReminders.js';
 
 const AuthContext = createContext(null);
 
@@ -73,11 +75,18 @@ async function ensureUserDoc(user) {
   return ref;
 }
 
+function completedAtMs(item) {
+  const t = item.completedAt;
+  if (!t) return 0;
+  return typeof t.toMillis === 'function' ? t.toMillis() : 0;
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [userDoc, setUserDoc] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [docLoading, setDocLoading] = useState(false);
+  const [reviewQueueItems, setReviewQueueItems] = useState([]);
 
   // Subscribe to Firebase auth state. When we have a user, ensure their
   // Firestore doc exists, then subscribe to it live.
@@ -92,6 +101,7 @@ export function AuthProvider({ children }) {
       }
       if (!fbUser) {
         setUserDoc(null);
+        setReviewQueueItems([]);
         return;
       }
       setDocLoading(true);
@@ -121,6 +131,19 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
+  useEffect(() => {
+    if (!user?.uid) return undefined;
+    return subscribeReviewQueue(user.uid, setReviewQueueItems);
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid || !reviewQueueItems.length) return undefined;
+    const t = setTimeout(() => {
+      runReviewReminders(user.uid, reviewQueueItems).catch(() => {});
+    }, 2000);
+    return () => clearTimeout(t);
+  }, [user?.uid, reviewQueueItems]);
+
   const signInWithGoogle = useCallback(async () => {
     await signInWithPopup(auth, googleProvider);
   }, []);
@@ -147,6 +170,28 @@ export function AuthProvider({ children }) {
     await signOut(auth);
   }, []);
 
+  const reviewDerived = useMemo(() => {
+    const pendingReviewCount = reviewQueueItems.length;
+    const maxUnreviewedMs = REVIEW_LIMITS.AUTO_CLOSE_DAYS * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    const unreviewedTradeCount = reviewQueueItems.filter((item) => {
+      const t = completedAtMs(item);
+      return t > 0 && now - t > maxUnreviewedMs;
+    }).length;
+    const hasPendingReviews = pendingReviewCount > 0;
+    const sorted = [...reviewQueueItems].sort(
+      (a, b) => completedAtMs(a) - completedAtMs(b),
+    );
+    const firstPendingDealId = sorted[0]?.id ?? null;
+    return {
+      reviewQueueItems,
+      pendingReviewCount,
+      unreviewedTradeCount,
+      hasPendingReviews,
+      firstPendingDealId,
+    };
+  }, [reviewQueueItems]);
+
   const value = useMemo(() => {
     const isAdmin = userDoc?.role === 'admin' || isAdminEmail(user?.email);
     // `canEngage` controls whether a member can create deals, message, or
@@ -159,13 +204,14 @@ export function AuthProvider({ children }) {
       loading: authLoading || docLoading,
       isAdmin,
       canEngage,
+      ...reviewDerived,
       signInWithGoogle,
       signUpWithEmail,
       signInWithEmail,
       resetPassword,
       signOutUser,
     };
-  }, [user, userDoc, authLoading, docLoading, signInWithGoogle, signUpWithEmail, signInWithEmail, resetPassword, signOutUser]);
+  }, [user, userDoc, authLoading, docLoading, reviewDerived, signInWithGoogle, signUpWithEmail, signInWithEmail, resetPassword, signOutUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

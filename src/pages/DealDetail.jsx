@@ -7,7 +7,7 @@
 //   - review submission
 
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { doc } from 'firebase/firestore';
 import { useDocument } from 'react-firebase-hooks/firestore';
 import { db } from '../firebase.js';
@@ -17,7 +17,6 @@ import EmptyState from '../components/ui/EmptyState.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
 import LockedAction from '../components/ui/LockedAction.jsx';
 import MessageThread from '../components/deals/MessageThread.jsx';
-import ReviewForm from '../components/deals/ReviewForm.jsx';
 import { DEAL_STATUS } from '../lib/constants.js';
 import {
   fetchOtherParticipant,
@@ -87,7 +86,14 @@ export default function DealDetail() {
 
   // Engagement actions (accept/decline, schedule, complete, review) all
   // require approved status — pending members see a soft lock instead.
-  const canAcceptDecline = canEngage && !iAmInitiator && deal.status === DEAL_STATUS.REQUESTED;
+  const canAcceptDecline = canEngage
+    && !hasPendingReviews
+    && !iAmInitiator
+    && deal.status === DEAL_STATUS.REQUESTED;
+  const acceptBlockedByReview = canEngage
+    && hasPendingReviews
+    && !iAmInitiator
+    && deal.status === DEAL_STATUS.REQUESTED;
   const canSchedule = canEngage
     && (deal.status === DEAL_STATUS.ACCEPTED || deal.status === DEAL_STATUS.SCHEDULED);
   const canMarkComplete = canEngage
@@ -207,6 +213,17 @@ export default function DealDetail() {
         </section>
       ) : null}
 
+      {acceptBlockedByReview ? (
+        <LockedAction>
+          Finish your pending review before accepting a new exchange.{' '}
+          {firstPendingDealId ? (
+            <Link to={`/deals/${firstPendingDealId}/review`} className="text-green font-semibold underline">
+              Leave review
+            </Link>
+          ) : null}
+        </LockedAction>
+      ) : null}
+
       {canAcceptDecline ? (
         <section className="grid grid-cols-2 gap-2">
           <button
@@ -251,11 +268,15 @@ export default function DealDetail() {
       ) : null}
 
       {canReview && other ? (
-        <ReviewForm
-          dealId={deal.id}
-          reviewerId={user.uid}
-          revieweeId={other.id}
-        />
+        <div className="card p-4 space-y-3 border-green/20 bg-green/5">
+          <div className="text-sm font-semibold text-ink-primary">Your turn — leave a review</div>
+          <p className="text-xs text-ink-muted">
+            Reviews are blind until you both submit. Honest feedback helps everyone trade with confidence.
+          </p>
+          <Link to={`/deals/${deal.id}/review`} className="btn-primary w-full text-center block">
+            Leave your review
+          </Link>
+        </div>
       ) : null}
 
       {actionError ? (

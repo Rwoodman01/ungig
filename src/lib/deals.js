@@ -20,7 +20,9 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { DEAL_STATUS } from './constants.js';
-import { computeBadgesAfterTrade } from './badges.js';
+import { computeBadgesAfterCompletion } from './badges.js';
+import { notify, NOTIFICATION_TYPES } from './notifications.js';
+import { setReviewQueueEntry } from './reviewQueue.js';
 
 export async function createDeal({ initiatorId, receiverId }) {
   if (!initiatorId || !receiverId || initiatorId === receiverId) {
@@ -40,6 +42,17 @@ export async function createDeal({ initiatorId, receiverId }) {
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
+
+  const [initSnap, recvSnap] = await Promise.all([
+    getDoc(doc(db, 'users', initiatorId)),
+    getDoc(doc(db, 'users', receiverId)),
+  ]);
+  const initiatorName = initSnap.data()?.displayName ?? 'Someone';
+  await notify(receiverId, NOTIFICATION_TYPES.TRADE_PROPOSED, {
+    otherName: initiatorName,
+    dealId: ref.id,
+  });
+
   return ref.id;
 }
 
@@ -51,7 +64,21 @@ export async function updateDealFields(dealId, fields) {
 }
 
 export async function setDealStatus(dealId, status) {
-  await updateDealFields(dealId, { status });
+  const dealRef = doc(db, 'deals', dealId);
+  const snap = await getDoc(dealRef);
+  const prev = snap.data()?.status;
+  const deal = snap.data() ?? {};
+
+  await updateDoc(dealRef, { status, updatedAt: serverTimestamp() });
+
+  if (prev === DEAL_STATUS.REQUESTED && status === DEAL_STATUS.ACCEPTED) {
+    const recvSnap = await getDoc(doc(db, 'users', deal.receiverId));
+    const receiverName = recvSnap.data()?.displayName ?? 'Someone';
+    await notify(deal.initiatorId, NOTIFICATION_TYPES.TRADE_ACCEPTED, {
+      otherName: receiverName,
+      dealId,
+    });
+  }
 }
 
 export async function sendDealMessage(dealId, senderId, text) {
@@ -69,6 +96,8 @@ export async function sendDealMessage(dealId, senderId, text) {
 // complete, transition the deal to "completed" and award badges atomically.
 export async function markDealComplete(dealId, userId) {
   const dealRef = doc(db, 'deals', dealId);
+  let notifyPair = null;
+
   await runTransaction(db, async (tx) => {
     const dealSnap = await tx.get(dealRef);
     if (!dealSnap.exists()) throw new Error('Deal not found.');
@@ -97,9 +126,6 @@ export async function markDealComplete(dealId, userId) {
     const iData = iSnap.data() ?? {};
     const rData = rSnap.data() ?? {};
 
-    const iNewCount = (iData.tradeCount ?? 0) + 1;
-    const rNewCount = (rData.tradeCount ?? 0) + 1;
-
     tx.update(dealRef, {
       completedBy,
       status: DEAL_STATUS.COMPLETED,
@@ -109,61 +135,43 @@ export async function markDealComplete(dealId, userId) {
     tx.update(initiatorRef, {
       tradeCount: increment(1),
       connections: arrayUnion(deal.receiverId),
-      badges: computeBadgesAfterTrade({
-        existingBadges: iData.badges ?? [],
-        newTradeCount: iNewCount,
-      }),
+      badges: computeBadgesAfterCompletion({ existingBadges: iData.badges ?? [] }),
       updatedAt: serverTimestamp(),
     });
     tx.update(receiverRef, {
       tradeCount: increment(1),
       connections: arrayUnion(deal.initiatorId),
-      badges: computeBadgesAfterTrade({
-        existingBadges: rData.badges ?? [],
-        newTradeCount: rNewCount,
-      }),
+      badges: computeBadgesAfterCompletion({ existingBadges: rData.badges ?? [] }),
       updatedAt: serverTimestamp(),
     });
-  });
-}
 
-// Submit a review. We write to a top-level `reviews` collection (for easy
-// aggregation by revieweeId) AND inside the deal for provenance.
-// When both parties have reviewed, flip the deal status to "reviewed".
-export async function submitReview({ dealId, reviewerId, revieweeId, rating, comment }) {
-  const dealRef = doc(db, 'deals', dealId);
-  const reviewInDeal = doc(db, 'deals', dealId, 'reviews', reviewerId);
-  const reviewTopLevel = doc(collection(db, 'reviews'));
-
-  await runTransaction(db, async (tx) => {
-    const dealSnap = await tx.get(dealRef);
-    if (!dealSnap.exists()) throw new Error('Deal not found.');
-    const deal = dealSnap.data();
-    if (deal.status !== 'completed' && deal.status !== 'reviewed') {
-      throw new Error('Deal must be completed before reviewing.');
-    }
-
-    const payload = {
+    notifyPair = {
+      initiatorId: deal.initiatorId,
+      receiverId: deal.receiverId,
       dealId,
-      reviewerId,
-      revieweeId,
-      rating,
-      comment: (comment ?? '').slice(0, 200),
-      createdAt: serverTimestamp(),
     };
-    tx.set(reviewTopLevel, payload);
-    tx.set(reviewInDeal, payload);
-
-    const reviewedBy = { ...(deal.reviewedBy ?? {}), [reviewerId]: true };
-    const bothReviewed =
-      !!reviewedBy[deal.initiatorId] && !!reviewedBy[deal.receiverId];
-
-    tx.update(dealRef, {
-      reviewedBy,
-      status: bothReviewed ? DEAL_STATUS.REVIEWED : deal.status,
-      updatedAt: serverTimestamp(),
-    });
   });
+
+  if (notifyPair) {
+    const [iUser, rUser] = await Promise.all([
+      getDoc(doc(db, 'users', notifyPair.initiatorId)),
+      getDoc(doc(db, 'users', notifyPair.receiverId)),
+    ]);
+    const iName = iUser.data()?.displayName ?? 'Someone';
+    const rName = rUser.data()?.displayName ?? 'Someone';
+    await Promise.all([
+      setReviewQueueEntry(notifyPair.initiatorId, notifyPair.dealId),
+      setReviewQueueEntry(notifyPair.receiverId, notifyPair.dealId),
+      notify(notifyPair.initiatorId, NOTIFICATION_TYPES.TRADE_COMPLETED, {
+        otherName: rName,
+        dealId: notifyPair.dealId,
+      }),
+      notify(notifyPair.receiverId, NOTIFICATION_TYPES.TRADE_COMPLETED, {
+        otherName: iName,
+        dealId: notifyPair.dealId,
+      }),
+    ]);
+  }
 }
 
 // Convenience: fetch the other participant of a deal for the given userId.

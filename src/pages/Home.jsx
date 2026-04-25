@@ -16,7 +16,13 @@ export default function Home() {
       <div className="hero-card">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <Wordmark size="lg" withTagline={false} className="block" />
+            <Wordmark
+              size="lg"
+              withTagline={false}
+              headClassName="text-ink-inverse"
+              tailClassName="text-green"
+              className="block"
+            />
             <Tagline className="text-ink-inverse/70 text-left mt-2" />
           </div>
           <Avatar src={userDoc?.photoURL} name={userDoc?.displayName} size="md" />

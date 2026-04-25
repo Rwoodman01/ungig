@@ -9,6 +9,8 @@ import Tagline from './Tagline.jsx';
 export default function Wordmark({
   size = 'md',
   withTagline = false,
+  headClassName = 'text-ink-primary',
+  tailClassName = 'text-green',
   className = '',
 }) {
   const sizeClass =
@@ -25,8 +27,8 @@ export default function Wordmark({
   return (
     <span className={className}>
       <span className={`wordmark ${sizeClass}`}>
-        <span className="text-ink-primary">{head}</span>
-        <span className="text-green">{tail}</span>
+        <span className={headClassName}>{head}</span>
+        <span className={tailClassName}>{tail}</span>
       </span>
       {withTagline ? <Tagline className="mt-2" /> : null}
     </span>

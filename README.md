@@ -59,7 +59,7 @@ firebase deploy --only firestore:rules,firestore:indexes,storage:rules
 ```
 users/{uid}
   displayName, email, photoURL, bio, location
-  talentsOffered[], servicesNeeded[], proofPhotos[]
+  talentsOffered[], servicesNeeded[], portfolioPhotos[], proofPhotos[] (legacy)
   status: 'unpaid' | 'pending' | 'approved' | 'rejected'
   subscriptionActive, bgCheckConfirmed, bgCheckDate
   profileComplete, memberSince, badges[], tradeCount
@@ -164,7 +164,8 @@ src/
   components/
     auth/  (ProtectedRoute, StatusGate, AdminRoute)
     layout/  (AppShell, TopBar, BottomNav)
-    ui/  (Avatar, Badge, EmptyState, PhotoUploader, Spinner, TagInput)
+    ui/  (Avatar, Badge, EmptyState, Spinner, TagInput)
+    photos/ (PhotoUploader, PhotoGrid, profile/portfolio/deal photo managers)
     deals/  (MessageThread, review flow at `/deals/:dealId/review`)
   lib/  (constants, format, badges, deals, storage)
   pages/

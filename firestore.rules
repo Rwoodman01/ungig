@@ -23,6 +23,7 @@ service cloud.firestore {
     function selfUpdatableFields() {
       return [
         'displayName', 'email', 'photoURL', 'bio', 'location',
+        'profilePhotoPath', 'portfolioPhotos',
         'talentsOffered', 'servicesNeeded', 'proofPhotos',
         'welcomeSeen',
         'subscriptionActive', 'paidAt',
@@ -77,6 +78,10 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys()
                .hasOnly(selfUpdatableFields())
           && (
+            !('portfolioPhotos' in request.resource.data)
+            || request.resource.data.portfolioPhotos.size() <= 9
+          )
+          && (
             request.resource.data.status == resource.data.status
             || (
               resource.data.status == 'unpaid'
@@ -112,6 +117,16 @@ service cloud.firestore {
           && request.resource.data.readAt == null;
         allow update: if isSelf(uid)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt']);
+        allow delete: if isSelf(uid) || isAdmin();
+      }
+
+      match /swipes/{targetUid} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create, update: if isSelf(uid)
+          && targetUid != uid
+          && request.resource.data.targetUid == targetUid
+          && request.resource.data.direction in ['left', 'right']
+          && request.resource.data.source in ['swipe', 'button'];
         allow delete: if isSelf(uid) || isAdmin();
       }
     }
@@ -229,6 +244,12 @@ service cloud.firestore {
         );
 
       allow delete: if isAdmin();
+    }
+
+    match /matches/{matchId} {
+      allow read: if isSignedIn()
+        && request.auth.uid in resource.data.participantIds;
+      allow create, update, delete: if isAdmin();
     }
   }
 }

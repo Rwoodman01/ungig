@@ -5,11 +5,13 @@ import Wordmark from '../components/brand/Wordmark.jsx';
 import Tagline from '../components/brand/Tagline.jsx';
 import { MEMBER_STATUS } from '../lib/constants.js';
 import InstallPrompt from '../components/pwa/InstallPrompt.jsx';
+import { useMatches } from '../hooks/useMatches.js';
 
 // Signed-in dashboard (tab: Home). Intentionally spare — surface next actions
 // rather than info overload.
 export default function Home() {
-  const { userDoc, canEngage } = useAuth();
+  const { user, userDoc, canEngage } = useAuth();
+  const { count: matchCount } = useMatches(user?.uid);
   const isPending = userDoc?.status === MEMBER_STATUS.PENDING;
 
   return (
@@ -66,6 +68,12 @@ export default function Home() {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
+        <Link to="/matches" className="card p-4 text-center">
+          <div className="text-2xl font-display font-bold text-ink-primary">
+            {matchCount}
+          </div>
+          <div className="text-xs text-ink-muted">Matches</div>
+        </Link>
         <Link to="/deals" className="card p-4 text-center">
           <div className="text-2xl font-display font-bold text-ink-primary">
             {userDoc?.tradeCount ?? 0}

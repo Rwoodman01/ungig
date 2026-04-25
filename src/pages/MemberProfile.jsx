@@ -17,6 +17,8 @@ import ReviewsList from '../components/reviews/ReviewsList.jsx';
 import ReviewsEmptyState from '../components/reviews/ReviewsEmptyState.jsx';
 import UnreviewedFlag from '../components/reviews/UnreviewedFlag.jsx';
 import ReviewWarningBanner from '../components/reviews/ReviewWarningBanner.jsx';
+import PhotoGrid from '../components/photos/PhotoGrid.jsx';
+import CompletedWorkSection from '../components/photos/CompletedWorkSection.jsx';
 import { formatDate } from '../lib/format.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { createDeal } from '../lib/deals.js';
@@ -67,6 +69,9 @@ export default function MemberProfile() {
 
   const queueItems = queueSnap?.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [];
   const staleUnreviewed = countStaleReviewQueueItems(queueItems);
+  const portfolioPhotos = member.portfolioPhotos?.length
+    ? member.portfolioPhotos
+    : (member.proofPhotos ?? []).map((url) => ({ url, path: '', legacy: true }));
 
   const requestTrade = async () => {
     if (!user || isSelf) return;
@@ -130,24 +135,17 @@ export default function MemberProfile() {
         </section>
       ) : null}
 
-      {member.proofPhotos?.length ? (
+      {portfolioPhotos.length ? (
         <section>
-          <h2 className="text-sm font-semibold text-ink-primary mb-2">Proof of work</h2>
-          <div className="grid grid-cols-3 gap-2">
-            {member.proofPhotos.map((url) => (
-              <a
-                key={url}
-                href={url}
-                target="_blank"
-                rel="noreferrer"
-                className="aspect-square rounded-2xl overflow-hidden bg-cream border border-border"
-              >
-                <img src={url} alt="" className="h-full w-full object-cover" />
-              </a>
-            ))}
-          </div>
+          <h2 className="text-sm font-semibold text-ink-primary mb-2">Portfolio</h2>
+          <PhotoGrid
+            photos={portfolioPhotos}
+            coverIndex={member.portfolioPhotos?.length ? 0 : -1}
+          />
         </section>
       ) : null}
+
+      <CompletedWorkSection memberId={member.id} />
 
       {member.connections?.length ? (
         <section>

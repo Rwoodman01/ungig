@@ -1,12 +1,8 @@
+import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 
-function initials(name) {
-  if (!name) return '?';
-  const parts = name.trim().split(/\s+/).slice(0, 2);
-  return parts.map((p) => p[0]?.toUpperCase() ?? '').join('') || '?';
-}
-
 export default function Avatar({ src, name, size = 'md', className }) {
+  const [failed, setFailed] = useState(false);
   const sizes = {
     xs: 'h-8 w-8 text-xs',
     sm: 'h-10 w-10 text-sm',
@@ -14,6 +10,12 @@ export default function Avatar({ src, name, size = 'md', className }) {
     lg: 'h-20 w-20 text-lg',
     xl: 'h-28 w-28 text-2xl',
   };
+  const displaySrc = src && !failed ? src : '/giff/face.png';
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
   return (
     <div
       className={clsx(
@@ -24,15 +26,12 @@ export default function Avatar({ src, name, size = 'md', className }) {
       )}
       aria-label={name ? `${name} avatar` : 'avatar'}
     >
-      {src ? (
-        <img src={src} alt={name ?? ''} className="h-full w-full object-cover" />
-      ) : (
-        <img
-          src="/giff/face.png"
-          alt=""
-          className="h-full w-full object-cover"
-        />
-      )}
+      <img
+        src={displaySrc}
+        alt={src && !failed ? (name ?? '') : ''}
+        className="h-full w-full object-cover"
+        onError={() => setFailed(true)}
+      />
     </div>
   );
 }

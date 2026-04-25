@@ -48,6 +48,14 @@
         { "fieldPath": "flagged", "order": "ASCENDING" },
         { "fieldPath": "submittedAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "matches",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "participantIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

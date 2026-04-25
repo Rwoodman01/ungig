@@ -8,8 +8,9 @@ import { useNavigate } from 'react-router-dom';
 import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
-import PhotoUploader from '../../components/ui/PhotoUploader.jsx';
 import TagInput from '../../components/ui/TagInput.jsx';
+import ProfilePhotoUploader from '../../components/photos/ProfilePhotoUploader.jsx';
+import PortfolioPhotoManager from '../../components/photos/PortfolioPhotoManager.jsx';
 import ProgressBar from '../../components/onboarding/ProgressBar.jsx';
 import { LIMITS } from '../../lib/constants.js';
 import AuthFooter from '../../components/brand/AuthFooter.jsx';
@@ -21,9 +22,10 @@ export default function ProfileSetup() {
   const [bio, setBio] = useState(userDoc?.bio ?? '');
   const [location, setLocation] = useState(userDoc?.location ?? '');
   const [photoURL, setPhotoURL] = useState(userDoc?.photoURL ?? '');
+  const [profilePhotoPath, setProfilePhotoPath] = useState(userDoc?.profilePhotoPath ?? '');
+  const [portfolioPhotos, setPortfolioPhotos] = useState(userDoc?.portfolioPhotos ?? []);
   const [talents, setTalents] = useState(userDoc?.talentsOffered ?? []);
   const [needs, setNeeds] = useState(userDoc?.servicesNeeded ?? []);
-  const [proofPhotos, setProofPhotos] = useState(userDoc?.proofPhotos ?? []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -44,9 +46,10 @@ export default function ProfileSetup() {
         bio: bio.trim().slice(0, LIMITS.BIO_MAX),
         location: location.trim(),
         photoURL,
+        profilePhotoPath,
+        portfolioPhotos,
         talentsOffered: talents,
         servicesNeeded: needs,
-        proofPhotos,
         profileComplete: true,
         updatedAt: serverTimestamp(),
       });
@@ -71,12 +74,14 @@ export default function ProfileSetup() {
         </p>
 
       <form onSubmit={save} className="mt-6 space-y-6">
-        <PhotoUploader
+        <ProfilePhotoUploader
           uid={user.uid}
-          kind="avatar"
-          value={photoURL}
-          onChange={setPhotoURL}
-          label="Profile photo"
+          photoURL={photoURL}
+          displayName={displayName}
+          onUploaded={({ url, path }) => {
+            setPhotoURL(url);
+            setProfilePhotoPath(path);
+          }}
         />
 
         <div>
@@ -137,14 +142,11 @@ export default function ProfileSetup() {
           hint="Pick 1-3 things you'd like in return."
         />
 
-        <PhotoUploader
+        <PortfolioPhotoManager
           uid={user.uid}
-          kind="proof"
-          value={proofPhotos}
-          onChange={setProofPhotos}
-          multi
-          max={LIMITS.PROOF_PHOTOS_MAX}
-          label="Proof photos (your work)"
+          photos={portfolioPhotos}
+          legacyProofPhotos={userDoc?.proofPhotos ?? []}
+          onChange={setPortfolioPhotos}
         />
 
         {error ? <p className="text-red-400 text-sm">{error}</p> : null}

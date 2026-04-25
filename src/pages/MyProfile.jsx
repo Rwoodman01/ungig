@@ -8,8 +8,10 @@ import { db } from '../firebase.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
 import Badge from '../components/ui/Badge.jsx';
-import PhotoUploader from '../components/ui/PhotoUploader.jsx';
 import TagInput from '../components/ui/TagInput.jsx';
+import PhotoGrid from '../components/photos/PhotoGrid.jsx';
+import ProfilePhotoUploader from '../components/photos/ProfilePhotoUploader.jsx';
+import PortfolioPhotoManager from '../components/photos/PortfolioPhotoManager.jsx';
 import { formatDate } from '../lib/format.js';
 import { LIMITS, MEMBER_STATUS } from '../lib/constants.js';
 
@@ -77,6 +79,18 @@ export default function MyProfile() {
         </section>
       ) : null}
 
+      {(userDoc.portfolioPhotos?.length || userDoc.proofPhotos?.length) ? (
+        <section>
+          <h2 className="text-sm font-semibold text-ink-primary mb-2">Portfolio</h2>
+          <PhotoGrid
+            photos={userDoc.portfolioPhotos?.length
+              ? userDoc.portfolioPhotos
+              : (userDoc.proofPhotos ?? []).map((url) => ({ url }))}
+            coverIndex={userDoc.portfolioPhotos?.length ? 0 : -1}
+          />
+        </section>
+      ) : null}
+
       <div className="space-y-2">
         <button className="btn-primary w-full" onClick={() => setEditing(true)}>
           Edit profile
@@ -94,9 +108,10 @@ function EditProfileInline({ userDoc, uid, onDone }) {
   const [bio, setBio] = useState(userDoc.bio ?? '');
   const [location, setLocation] = useState(userDoc.location ?? '');
   const [photoURL, setPhotoURL] = useState(userDoc.photoURL ?? '');
+  const [profilePhotoPath, setProfilePhotoPath] = useState(userDoc.profilePhotoPath ?? '');
+  const [portfolioPhotos, setPortfolioPhotos] = useState(userDoc.portfolioPhotos ?? []);
   const [talents, setTalents] = useState(userDoc.talentsOffered ?? []);
   const [needs, setNeeds] = useState(userDoc.servicesNeeded ?? []);
-  const [proofPhotos, setProofPhotos] = useState(userDoc.proofPhotos ?? []);
   const [busy, setBusy] = useState(false);
 
   const save = async (e) => {
@@ -108,9 +123,10 @@ function EditProfileInline({ userDoc, uid, onDone }) {
         bio: bio.trim().slice(0, LIMITS.BIO_MAX),
         location: location.trim(),
         photoURL,
+        profilePhotoPath,
+        portfolioPhotos,
         talentsOffered: talents,
         servicesNeeded: needs,
-        proofPhotos,
         updatedAt: serverTimestamp(),
       });
       onDone();
@@ -122,12 +138,14 @@ function EditProfileInline({ userDoc, uid, onDone }) {
   return (
     <form onSubmit={save} className="space-y-5">
       <h1 className="text-xl font-display font-bold text-ink-primary">Edit profile</h1>
-      <PhotoUploader
+      <ProfilePhotoUploader
         uid={uid}
-        kind="avatar"
-        value={photoURL}
-        onChange={setPhotoURL}
-        label="Profile photo"
+        photoURL={photoURL}
+        displayName={displayName}
+        onUploaded={({ url, path }) => {
+          setPhotoURL(url);
+          setProfilePhotoPath(path);
+        }}
       />
       <div>
         <label className="text-sm font-medium text-ink-secondary mb-1 block">Name</label>
@@ -150,14 +168,11 @@ function EditProfileInline({ userDoc, uid, onDone }) {
       </div>
       <TagInput value={talents} onChange={setTalents} max={LIMITS.TALENTS_MAX} label="Talents I offer" />
       <TagInput value={needs} onChange={setNeeds} max={LIMITS.SERVICES_MAX} label="Services I need" />
-      <PhotoUploader
+      <PortfolioPhotoManager
         uid={uid}
-        kind="proof"
-        value={proofPhotos}
-        onChange={setProofPhotos}
-        multi
-        max={LIMITS.PROOF_PHOTOS_MAX}
-        label="Proof photos"
+        photos={portfolioPhotos}
+        legacyProofPhotos={userDoc.proofPhotos ?? []}
+        onChange={setPortfolioPhotos}
       />
       <div className="grid grid-cols-2 gap-2">
         <button type="button" onClick={onDone} className="btn-secondary">Cancel</button>

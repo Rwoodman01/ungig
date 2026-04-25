@@ -39,6 +39,10 @@ export const DEAL_STATUS = Object.freeze({
   DECLINED: 'declined',
 });
 
+export const MATCH_STATUS = Object.freeze({
+  ACTIVE: 'active',
+});
+
 /** Skill tag chips for reviews (max 3 per review). */
 export const SKILL_TAGS = Object.freeze([
   'Reliable',
@@ -98,6 +102,7 @@ export const NOTIFICATION_TYPES = Object.freeze({
   REVIEW_RECEIVED: 'review_received',
   REVIEW_REMINDER: 'review_reminder',
   REVIEWS_CLOSED: 'reviews_closed',
+  MATCH: 'match',
   BADGE_EARNED: 'badge_earned',
 });
 
@@ -141,6 +146,11 @@ export function getNotificationCopy(type, payload = {}) {
       return {
         message: 'This exchange is complete. Reviews are now closed.',
         link: dealId ? `/deals/${dealId}` : '/deals',
+      };
+    case NOTIFICATION_TYPES.MATCH:
+      return {
+        message: `It's a match with ${name}! Giff thinks you two would trade well together.`,
+        link: '/matches',
       };
     case NOTIFICATION_TYPES.BADGE_EARNED:
       return {

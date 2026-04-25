@@ -28,6 +28,7 @@ import DealDetail from './pages/DealDetail.jsx';
 import MyProfile from './pages/MyProfile.jsx';
 import Notifications from './pages/Notifications.jsx';
 import ReviewWizard from './pages/reviews/ReviewWizard.jsx';
+import Matches from './pages/Matches.jsx';
 
 import AdminHome from './pages/admin/AdminHome.jsx';
 import PendingMembers from './pages/admin/PendingMembers.jsx';
@@ -85,6 +86,7 @@ export default function App() {
                 <Route path="/deals" element={<Deals />} />
                 <Route path="/deals/:dealId" element={<DealDetail />} />
                 <Route path="/notifications" element={<Notifications />} />
+                <Route path="/matches" element={<Matches />} />
                 <Route path="/me" element={<MyProfile />} />
 
                 {/* Admin */}

@@ -1,8 +1,7 @@
 rules_version = '2';
 
-// Ungig Storage rules. Users own their own prefix; reads are public-ish
-// (any signed-in user) so profile photos and proof photos can render in
-// the directory.
+// Gifted Storage rules. Photo URLs are stored in Firestore; Storage access
+// is scoped by owner/participant while allowing approved members to view.
 
 service firebase.storage {
   match /b/{bucket}/o {
@@ -13,13 +12,37 @@ service firebase.storage {
     function isOwner(uid) {
       return isSignedIn() && request.auth.uid == uid;
     }
-
-    match /users/{uid}/{allPaths=**} {
-      allow read: if isSignedIn();
-      allow write: if isOwner(uid)
-        && request.resource.size < 8 * 1024 * 1024   // 8 MB cap per upload
+    function isApprovedMember() {
+      return isSignedIn()
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.status == 'approved';
+    }
+    function isDealParticipant(dealId) {
+      return isSignedIn()
+        && request.auth.uid in firestore.get(/databases/(default)/documents/deals/$(dealId)).data.participantIds;
+    }
+    function validImage(maxBytes) {
+      return request.resource.size <= maxBytes
         && request.resource.contentType.matches('image/.*');
+    }
+
+    match /users/{uid}/profile/avatar.jpg {
+      allow read: if isOwner(uid) || isApprovedMember();
+      allow write: if isOwner(uid) && validImage(3 * 1024 * 1024);
       allow delete: if isOwner(uid);
+    }
+
+    match /users/{uid}/portfolio/{fileName} {
+      allow read: if isOwner(uid) || isApprovedMember();
+      allow write: if isOwner(uid) && validImage(6 * 1024 * 1024);
+      allow delete: if isOwner(uid);
+    }
+
+    match /deals/{dealId}/photos/{uid}/{fileName} {
+      allow read: if isDealParticipant(dealId) || isApprovedMember();
+      allow write: if isOwner(uid)
+        && isDealParticipant(dealId)
+        && validImage(6 * 1024 * 1024);
+      allow delete: if isOwner(uid) && isDealParticipant(dealId);
     }
   }
 }

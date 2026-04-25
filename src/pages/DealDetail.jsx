@@ -17,6 +17,7 @@ import EmptyState from '../components/ui/EmptyState.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
 import LockedAction from '../components/ui/LockedAction.jsx';
 import MessageThread from '../components/deals/MessageThread.jsx';
+import DealCompletionPhotoManager from '../components/photos/DealCompletionPhotoManager.jsx';
 import { DEAL_STATUS } from '../lib/constants.js';
 import {
   fetchOtherParticipant,
@@ -35,7 +36,7 @@ function StatusPill({ status }) {
 
 export default function DealDetail() {
   const { dealId } = useParams();
-  const { user, canEngage } = useAuth();
+  const { user, canEngage, hasPendingReviews, firstPendingDealId } = useAuth();
   const [dealSnap, loading, error] = useDocument(doc(db, 'deals', dealId));
   const [other, setOther] = useState(null);
   const [savingField, setSavingField] = useState('');
@@ -258,13 +259,16 @@ export default function DealDetail() {
       ) : null}
 
       {deal.status === DEAL_STATUS.COMPLETED || deal.status === DEAL_STATUS.REVIEWED ? (
-        <div className="card-cream p-4 text-sm text-ink-secondary flex items-center gap-3">
-          <img src="/giff/gift.png" alt="" className="h-10 w-10" />
-          <div>
-            <div className="font-semibold text-ink-primary">Exchange complete.</div>
-            <div className="text-ink-muted">Small acts. Big impact.</div>
+        <>
+          <div className="card-cream p-4 text-sm text-ink-secondary flex items-center gap-3">
+            <img src="/giff/gift.png" alt="" className="h-10 w-10" />
+            <div>
+              <div className="font-semibold text-ink-primary">Exchange complete.</div>
+              <div className="text-ink-muted">Small acts. Big impact.</div>
+            </div>
           </div>
-        </div>
+          <DealCompletionPhotoManager deal={deal} uid={user.uid} otherName={other?.displayName} />
+        </>
       ) : null}
 
       {canReview && other ? (

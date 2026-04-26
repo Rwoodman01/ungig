@@ -91,6 +91,20 @@ export async function submitReview({
     const reviewedBy = { ...(deal.reviewedBy ?? {}), [reviewerId]: true };
     const bothReviewed = !!reviewedBy[initiatorId] && !!reviewedBy[receiverId];
 
+    // Firestore requires every tx.get() before any tx.set/update/delete.
+    // When both parties have now reviewed, we must read the partner's in-deal
+    // review stub (for topLevelReviewId) before writing our new review docs.
+    let otherTopRef = null;
+    if (bothReviewed) {
+      const otherId = reviewerId === initiatorId ? receiverId : initiatorId;
+      const otherDealReviewRef = doc(db, 'deals', dealId, 'reviews', otherId);
+      const otherSnap = await tx.get(otherDealReviewRef);
+      if (!otherSnap.exists()) throw new Error('Partner review record missing.');
+      const otherTopId = otherSnap.data().topLevelReviewId;
+      if (!otherTopId) throw new Error('Partner review reference missing.');
+      otherTopRef = doc(db, 'reviews', otherTopId);
+    }
+
     const payload = {
       dealId,
       reviewerId,
@@ -116,14 +130,6 @@ export async function submitReview({
     });
 
     if (bothReviewed) {
-      const otherId = reviewerId === initiatorId ? receiverId : initiatorId;
-      const otherDealReviewRef = doc(db, 'deals', dealId, 'reviews', otherId);
-      const otherSnap = await tx.get(otherDealReviewRef);
-      if (!otherSnap.exists()) throw new Error('Partner review record missing.');
-      const otherTopId = otherSnap.data().topLevelReviewId;
-      if (!otherTopId) throw new Error('Partner review reference missing.');
-      const otherTopRef = doc(db, 'reviews', otherTopId);
-
       const vis = serverTimestamp();
       tx.update(reviewTopRef, { visibleAt: vis });
       tx.update(otherTopRef, { visibleAt: vis });

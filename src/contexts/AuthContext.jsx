@@ -63,6 +63,7 @@ function initialUserDoc(user) {
     connections: [],
     referredBy: null,
     role: isAdminEmail(user.email) ? 'admin' : 'member',
+    ...(isAdminEmail(user.email) ? { showInBrowse: false } : {}),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };

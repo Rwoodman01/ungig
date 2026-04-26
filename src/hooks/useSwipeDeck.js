@@ -5,6 +5,7 @@ import { db } from '../firebase.js';
 import { MEMBER_STATUS } from '../lib/constants.js';
 import { recordSwipe, swipesCollection } from '../lib/matches.js';
 import { sortDeckMembers } from '../lib/matching.js';
+import { isVisibleInMemberBrowse } from '../lib/memberBrowseVisibility.js';
 
 export function useSwipeDeck({ user, userDoc, locationFilter = '' }) {
   const membersQuery = useMemo(
@@ -29,7 +30,8 @@ export function useSwipeDeck({ user, userDoc, locationFilter = '' }) {
   );
 
   const members = useMemo(
-    () => membersSnap?.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [],
+    () => (membersSnap?.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [])
+      .filter(isVisibleInMemberBrowse),
     [membersSnap],
   );
 

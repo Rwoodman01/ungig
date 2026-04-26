@@ -33,7 +33,16 @@ service cloud.firestore {
         'referredBy',
         'status', 'applicationSubmittedAt',
         'updatedAt',
+        // Admin-only: opt this account into browse/swipe for testing.
+        'showInBrowse',
       ];
+    }
+
+    /** Approved members visible to non-admin signed-in users (browse, profiles). */
+    function memberVisibleInCommunity() {
+      return resource.data.status == 'approved'
+        && (!('role' in resource.data) || resource.data.role != 'admin'
+            || resource.data.showInBrowse == true);
     }
 
     function isTradeCompletionBump(uid) {
@@ -64,7 +73,7 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isSelf(uid)
         || isAdmin()
-        || (isSignedIn() && resource.data.status == 'approved');
+        || (isSignedIn() && memberVisibleInCommunity());
 
       allow create: if isSelf(uid)
         && request.resource.data.status == 'unpaid'
@@ -87,6 +96,11 @@ service cloud.firestore {
               resource.data.status == 'unpaid'
               && request.resource.data.status == 'pending'
             )
+          )
+          && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['showInBrowse'])
+            || resource.data.role == 'admin'
+            || isAdmin()
           )
         )
         || isTradeCompletionBump(uid);

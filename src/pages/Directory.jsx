@@ -14,6 +14,7 @@ import Avatar from '../components/ui/Avatar.jsx';
 import Spinner from '../components/ui/Spinner.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { isVisibleInMemberBrowse } from '../lib/memberBrowseVisibility.js';
 import { useSwipeDeck } from '../hooks/useSwipeDeck.js';
 import { useMatches } from '../hooks/useMatches.js';
 import SwipeDeck from '../components/swipe/SwipeDeck.jsx';
@@ -110,7 +111,8 @@ export default function Directory() {
     if (!snap) return [];
     const rows = snap.docs
       .map((d) => ({ id: d.id, ...d.data() }))
-      .filter((m) => m.id !== user?.uid);
+      .filter((m) => m.id !== user?.uid)
+      .filter(isVisibleInMemberBrowse);
 
     const norm = (s) => s.trim().toLowerCase();
     const textMatch = (m) => {

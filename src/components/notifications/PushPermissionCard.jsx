@@ -7,7 +7,7 @@ import { usePushPermission } from '../../hooks/usePushPermission.js';
  */
 export default function PushPermissionCard() {
   const { user, canEngage } = useAuth();
-  const { showPrompt, requesting, requestPermission, dismiss } =
+  const { showPrompt, requesting, lastError, requestPermission, dismiss } =
     usePushPermission(user?.uid);
 
   // Only surface the card to fully-approved members who haven't decided yet.
@@ -43,6 +43,10 @@ export default function PushPermissionCard() {
             Not now
           </button>
         </div>
+
+        {lastError ? (
+          <p className="text-xs text-coral mt-2">{lastError}</p>
+        ) : null}
       </div>
     </div>
   );

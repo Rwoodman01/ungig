@@ -28,6 +28,7 @@ export function usePushPermission(uid) {
     Boolean(localStorage.getItem(DISMISSED_KEY)),
   );
   const [requesting, setRequesting] = useState(false);
+  const [lastError, setLastError] = useState('');
 
   // Re-read permission whenever the user signs in.
   useEffect(() => {
@@ -45,8 +46,14 @@ export function usePushPermission(uid) {
   const requestPermission = useCallback(async () => {
     if (!uid) return;
     setRequesting(true);
+    setLastError('');
     try {
-      await requestPushToken(uid);
+      const token = await requestPushToken(uid);
+      // If permission is granted but we couldn't register a token, surface a
+      // lightweight hint so the button doesn't feel like a no-op.
+      if (getNotificationPermission() === 'granted' && !token) {
+        setLastError('Notifications enabled, but this device is not registered yet. (Missing VAPID key)');
+      }
     } catch {
       // User denied or browser error — update from API.
     } finally {
@@ -77,6 +84,7 @@ export function usePushPermission(uid) {
     showDismissed,
     showBlocked,
     requesting,
+    lastError,
     requestPermission,
     dismiss,
     clearDismissed,

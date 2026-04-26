@@ -32,19 +32,22 @@ function tokenDocId(token) {
 export async function requestPushToken(uid) {
   if (!('Notification' in window)) return null;
 
-  if (!VAPID_KEY) {
-    // eslint-disable-next-line no-console
-    console.warn(
-      '[Gifted] VITE_FIREBASE_VAPID_KEY is not set — push notifications disabled.',
-    );
-    return null;
-  }
-
   const messaging = await messagingPromise;
   if (!messaging) return null;
 
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') return null;
+
+  // Ask permission first (so the user sees the browser prompt). If the VAPID
+  // key is missing we can't register a token yet, but permission is still
+  // persisted by the browser and token registration will work once configured.
+  if (!VAPID_KEY) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[Gifted] VITE_FIREBASE_VAPID_KEY is not set — cannot register push token yet.',
+    );
+    return null;
+  }
 
   // Use the VitePWA-managed SW rather than the default firebase-messaging-sw.js.
   const swReg = await navigator.serviceWorker.ready;

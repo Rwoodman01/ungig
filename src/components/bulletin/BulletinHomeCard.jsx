@@ -1,8 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, getCountFromServer, query, where, Timestamp } from 'firebase/firestore';
-import { db } from '../../firebase.js';
-import { POST_STATUS } from '../../lib/constants.js';
+import { useBulletinPosts } from '../../hooks/useBulletinPosts.js';
 import { normalizeLocation } from '../../lib/bulletin.js';
 
 export default function BulletinHomeCard({ userDoc }) {
@@ -10,33 +8,23 @@ export default function BulletinHomeCard({ userDoc }) {
     () => normalizeLocation(userDoc?.location ?? ''),
     [userDoc?.location],
   );
-  const [count, setCount] = useState(null);
+  // Reuses the same single-shape query the bulletin page uses, so we
+  // depend on exactly one composite index (status ASC, createdAt DESC).
+  const { posts, loading, error } = useBulletinPosts({ locationKey });
+  const count = posts.length;
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const constraints = [
-          where('status', '==', POST_STATUS.ACTIVE),
-          where('expiresAt', '>', Timestamp.now()),
-        ];
-        if (locationKey) constraints.push(where('locationKey', '==', locationKey));
-        const snap = await getCountFromServer(query(collection(db, 'posts'), ...constraints));
-        if (!cancelled) setCount(snap.data().count ?? 0);
-      } catch {
-        if (!cancelled) setCount(null);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [locationKey]);
-
-  const subtitle = count == null
-    ? 'Local notes, offers, and asks.'
-    : count === 0
-      ? locationKey
-        ? 'Be the first to pin something local.'
-        : 'Be the first to pin something.'
-      : `${count} active ${count === 1 ? 'post' : 'posts'}${locationKey ? ' near you' : ''}.`;
+  let subtitle;
+  if (loading || error) {
+    subtitle = 'Local notes, offers, and asks.';
+  } else if (count === 0) {
+    subtitle = locationKey
+      ? 'Be the first to pin something local.'
+      : 'Be the first to pin something.';
+  } else {
+    subtitle = `${count} active ${count === 1 ? 'post' : 'posts'}${
+      locationKey ? ' near you' : ''
+    }.`;
+  }
 
   return (
     <Link

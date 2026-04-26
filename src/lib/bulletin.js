@@ -20,7 +20,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  limit,
   query,
   serverTimestamp,
   setDoc,
@@ -79,19 +78,28 @@ function validateDraft(draft) {
   return { what, exchange, details, location };
 }
 
-/** Count this user's currently-active, non-expired posts. */
+/**
+ * Count this user's currently-active, non-expired posts.
+ *
+ * Uses a single-field equality query (authorId only) so we don't need a
+ * composite index. We then filter status / expiry on the client. A user is
+ * capped at MAX_ACTIVE_POSTS_PER_USER active posts plus a small tail of
+ * recently-deleted/expired ones, so the read is tiny.
+ */
 export async function countActivePosts(uid) {
-  const nowTs = Timestamp.now();
   const snap = await getDocs(
-    query(
-      collection(db, 'posts'),
-      where('authorId', '==', uid),
-      where('status', '==', POST_STATUS.ACTIVE),
-      where('expiresAt', '>', nowTs),
-      limit(POST_LIMITS.MAX_ACTIVE_POSTS_PER_USER + 1),
-    ),
+    query(collection(db, 'posts'), where('authorId', '==', uid)),
   );
-  return snap.size;
+  const nowMs = Date.now();
+  let count = 0;
+  snap.forEach((d) => {
+    const data = d.data();
+    if (data.status !== POST_STATUS.ACTIVE) return;
+    const expMs = data.expiresAt?.toMillis?.();
+    if (expMs && expMs <= nowMs) return;
+    count += 1;
+  });
+  return count;
 }
 
 /**

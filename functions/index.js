@@ -5,6 +5,7 @@ const {
 } = require('firebase-functions/v2/firestore');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getMessaging } = require('firebase-admin/messaging');
 
 initializeApp();
 
@@ -78,6 +79,81 @@ exports.onSwipeWritten = onDocumentWritten('users/{uid}/swipes/{targetUid}', asy
     writeNotification({ recipientId: targetUid, fromUid: uid, otherName: uidName, matchId }),
   ]);
 });
+
+// Push notifications ──────────────────────────────────────────────────────────
+//
+// Single function that fans out a Web Push message for every notification doc
+// created anywhere in  users/{uid}/notifications/{nid}.  This covers ALL
+// notification types automatically — matches, trades, reviews, bulletin posts —
+// without per-event wiring.  Stale FCM tokens are cleaned up automatically.
+
+exports.onNotificationCreated = onDocumentCreated(
+  'users/{uid}/notifications/{nid}',
+  async (event) => {
+    const { uid, nid } = event.params;
+    const notification = event.data?.data();
+    if (!notification) return;
+
+    // Fetch all FCM tokens stored for this user (one per device).
+    const tokensSnap = await db
+      .collection(`users/${uid}/fcmTokens`)
+      .get();
+
+    if (tokensSnap.empty) return;
+
+    const tokenDocs = tokensSnap.docs;
+    const tokens = tokenDocs.map((d) => d.data().token).filter(Boolean);
+    if (!tokens.length) return;
+
+    const message = {
+      notification: {
+        title: 'Gifted',
+        body: notification.message ?? 'You have a new notification.',
+      },
+      data: {
+        link: notification.link ?? '/',
+        notificationId: nid,
+      },
+      webpush: {
+        fcmOptions: {
+          // Clicking the notification navigates here (Chrome / Edge).
+          link: notification.link ?? '/',
+        },
+      },
+      tokens,
+    };
+
+    let response;
+    try {
+      response = await getMessaging().sendEachForMulticast(message);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[Gifted] FCM sendEachForMulticast error', err);
+      return;
+    }
+
+    // Remove any tokens the browser has invalidated (user cleared site data,
+    // revoked permission, etc.) to avoid sending to dead registrations.
+    const staleIds = [];
+    response.responses.forEach((r, i) => {
+      if (
+        !r.success &&
+        (r.error?.code === 'messaging/registration-token-not-registered' ||
+          r.error?.code === 'messaging/invalid-registration-token')
+      ) {
+        staleIds.push(tokenDocs[i].id);
+      }
+    });
+
+    if (staleIds.length) {
+      const batch = db.batch();
+      staleIds.forEach((id) => {
+        batch.delete(db.doc(`users/${uid}/fcmTokens/${id}`));
+      });
+      await batch.commit();
+    }
+  },
+);
 
 // Bulletin board ─────────────────────────────────────────────────────────────
 //

@@ -5,6 +5,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+import { getMessaging, isSupported } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -29,3 +30,10 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// FCM is only available in browsers that support service workers + push.
+// We resolve to null on unsupported platforms (e.g. iOS Safari < 16.4) so the
+// rest of the app never has to guard against undefined.
+export const messagingPromise = isSupported()
+  .then((ok) => (ok ? getMessaging(app) : null))
+  .catch(() => null);

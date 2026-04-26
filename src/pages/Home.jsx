@@ -5,6 +5,7 @@ import Wordmark from '../components/brand/Wordmark.jsx';
 import Tagline from '../components/brand/Tagline.jsx';
 import { MEMBER_STATUS } from '../lib/constants.js';
 import InstallPrompt from '../components/pwa/InstallPrompt.jsx';
+import PushPermissionCard from '../components/notifications/PushPermissionCard.jsx';
 import { useMatches } from '../hooks/useMatches.js';
 import BulletinHomeCard from '../components/bulletin/BulletinHomeCard.jsx';
 
@@ -18,6 +19,7 @@ export default function Home() {
   return (
     <div className="space-y-6">
       <InstallPrompt />
+      <PushPermissionCard />
       <div className="hero-card">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">

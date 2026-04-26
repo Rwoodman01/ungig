@@ -129,6 +129,12 @@ service cloud.firestore {
           && request.resource.data.source in ['swipe', 'button'];
         allow delete: if isSelf(uid) || isAdmin();
       }
+
+      match /fcmTokens/{tokenId} {
+        // Only the owner can read or write their own FCM push tokens.
+        // The backend (Cloud Functions admin SDK) bypasses these rules.
+        allow read, write: if isSelf(uid);
+      }
     }
 
     match /deals/{dealId} {

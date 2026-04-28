@@ -24,6 +24,7 @@ const STATUS_LABEL = {
 export default function Deals() {
   const { user } = useAuth();
   const [namesById, setNamesById] = useState({});
+  if (!user?.uid) return <Spinner />;
   const q = useMemo(
     () => query(
       collection(db, 'deals'),
@@ -41,24 +42,35 @@ export default function Deals() {
 
   useEffect(() => {
     let cancelled = false;
-    const otherIds = Array.from(new Set(deals.flatMap((d) => [d.initiatorId, d.receiverId]).filter(Boolean)))
-      .filter((id) => id !== user.uid);
-    if (!otherIds.length) return undefined;
+    try {
+      const otherIds = Array.from(
+        new Set(deals.flatMap((d) => [d.initiatorId, d.receiverId]).filter(Boolean)),
+      ).filter((id) => id !== user.uid);
+      if (!otherIds.length) return undefined;
 
-    (async () => {
-      const entries = await Promise.all(otherIds.map(async (uid) => {
+      (async () => {
         try {
-          const s = await getDoc(doc(db, 'users', uid));
-          const name = s.exists() ? (s.data()?.displayName ?? 'Unknown Member') : 'Unknown Member';
-          return [uid, name];
+          const entries = await Promise.all(otherIds.map(async (uid) => {
+            try {
+              const s = await getDoc(doc(db, 'users', uid));
+              const name = s.exists()
+                ? (s.data()?.displayName ?? 'Unknown Member')
+                : 'Unknown Member';
+              return [uid, name];
+            } catch {
+              return [uid, 'Unknown Member'];
+            }
+          }));
+          if (!cancelled) {
+            setNamesById((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+          }
         } catch {
-          return [uid, 'Unknown Member'];
+          // ignore — deals page should still render even if hydration fails
         }
-      }));
-      if (!cancelled) {
-        setNamesById((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
-      }
-    })();
+      })();
+    } catch {
+      // ignore — deals page should still render even if hydration setup fails
+    }
 
     return () => { cancelled = true; };
   }, [deals, user.uid]);

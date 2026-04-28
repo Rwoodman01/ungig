@@ -30,12 +30,35 @@ function tokenDocId(token) {
  * the platform is unsupported.
  */
 export async function requestPushToken(uid) {
+  // eslint-disable-next-line no-console
+  console.log('[Push] requestPushToken start', {
+    uid: uid ? `${uid.slice(0, 6)}…` : null,
+    hasNotification: 'Notification' in window,
+    permission: 'Notification' in window ? Notification.permission : 'unsupported',
+    hasServiceWorker: 'serviceWorker' in navigator,
+    hasVapidKey: Boolean(VAPID_KEY),
+  });
   if (!('Notification' in window)) return null;
 
-  const messaging = await messagingPromise;
-  if (!messaging) return null;
+  let messaging = null;
+  try {
+    messaging = await messagingPromise;
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('[Push] messagingPromise rejected', e);
+    return null;
+  }
+  if (!messaging) {
+    // eslint-disable-next-line no-console
+    console.warn('[Push] Firebase Messaging not supported on this device/browser');
+    return null;
+  }
 
+  // eslint-disable-next-line no-console
+  console.log('[Push] requesting Notification permission…');
   const permission = await Notification.requestPermission();
+  // eslint-disable-next-line no-console
+  console.log('[Push] permission result', { permission });
   if (permission !== 'granted') return null;
 
   // Ask permission first (so the user sees the browser prompt). If the VAPID
@@ -50,24 +73,56 @@ export async function requestPushToken(uid) {
   }
 
   // Use the VitePWA-managed SW rather than the default firebase-messaging-sw.js.
-  const swReg = await navigator.serviceWorker.ready;
+  let swReg = null;
+  try {
+    swReg = await navigator.serviceWorker.ready;
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('[Push] serviceWorker.ready failed', e);
+    return null;
+  }
+  // eslint-disable-next-line no-console
+  console.log('[Push] service worker ready', { scope: swReg?.scope });
 
-  const token = await getToken(messaging, {
-    vapidKey: VAPID_KEY,
-    serviceWorkerRegistration: swReg,
+  let token = null;
+  try {
+    token = await getToken(messaging, {
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: swReg,
+    });
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('[Push] getToken failed', e);
+    return null;
+  }
+  // eslint-disable-next-line no-console
+  console.log('[Push] getToken result', {
+    hasToken: Boolean(token),
+    tokenDocId: token ? tokenDocId(token) : null,
+    tokenPreview: token ? `${token.slice(0, 10)}…${token.slice(-10)}` : null,
   });
 
   if (!token) return null;
 
-  await setDoc(
-    doc(db, 'users', uid, 'fcmTokens', tokenDocId(token)),
-    {
-      token,
-      createdAt: serverTimestamp(),
-      userAgent: navigator.userAgent.slice(0, 120),
-    },
-    { merge: true },
-  );
+  const tokenId = tokenDocId(token);
+  const ref = doc(db, 'users', uid, 'fcmTokens', tokenId);
+  try {
+    await setDoc(
+      ref,
+      {
+        token,
+        createdAt: serverTimestamp(),
+        userAgent: navigator.userAgent.slice(0, 120),
+      },
+      { merge: true },
+    );
+    // eslint-disable-next-line no-console
+    console.log('[Push] token saved to Firestore', { path: ref.path, tokenId });
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('[Push] token save failed', { path: ref.path, tokenId, error: e });
+    return null;
+  }
 
   return token;
 }

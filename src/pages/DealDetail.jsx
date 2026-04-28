@@ -34,6 +34,42 @@ function StatusPill({ status }) {
   );
 }
 
+function DealStageBar({ status }) {
+  const stages = ['Proposed', 'Accepted', 'Scheduled', 'Completed', 'Reviewed'];
+  const idxFor = (s) => {
+    if (s === DEAL_STATUS.REVIEWED) return 4;
+    if (s === DEAL_STATUS.COMPLETED) return 3;
+    if (s === DEAL_STATUS.SCHEDULED) return 2;
+    if (s === DEAL_STATUS.ACCEPTED) return 1;
+    return 0; // requested/declined/etc
+  };
+  const current = idxFor(status);
+  return (
+    <div className="card-cream p-3 border border-border rounded-2xl">
+      <div className="flex items-center justify-between gap-2 text-[11px]">
+        {stages.map((label, i) => (
+          <div key={label} className="flex-1 min-w-0">
+            <div
+              className={[
+                'h-1.5 rounded-full',
+                i <= current ? 'bg-green' : 'bg-border',
+              ].join(' ')}
+            />
+            <div
+              className={[
+                'mt-1 text-center truncate',
+                i === current ? 'text-ink-primary font-semibold' : 'text-ink-muted',
+              ].join(' ')}
+            >
+              {label}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function DealDetail() {
   const { dealId } = useParams();
   const { user, canEngage, hasPendingReviews, firstPendingDealId } = useAuth();
@@ -42,6 +78,7 @@ export default function DealDetail() {
   const [savingField, setSavingField] = useState('');
   const [actionBusy, setActionBusy] = useState('');
   const [actionError, setActionError] = useState('');
+  const [confirmCompleteOpen, setConfirmCompleteOpen] = useState(false);
 
   const deal = dealSnap?.exists() ? { id: dealSnap.id, ...dealSnap.data() } : null;
 
@@ -141,6 +178,8 @@ export default function DealDetail() {
         <StatusPill status={deal.status} />
       </div>
 
+      <DealStageBar status={deal.status} />
+
       {other ? (
         <div className="card p-4 flex items-center gap-3">
           <Avatar src={other.photoURL} name={other.displayName} size="sm" />
@@ -166,14 +205,19 @@ export default function DealDetail() {
         <h2 className="text-sm font-semibold text-ink-primary">Your offer</h2>
         <textarea
           className="input min-h-[3rem]"
-          placeholder="Describe what you'll provide."
+          placeholder="Describe what you’ll provide. Include scope, timeline, and any details that make it easy to say yes."
           value={myService}
           onChange={(e) => setMyService(e.target.value)}
           onBlur={saveMyService}
           disabled={!canEngage}
         />
         <div className="text-xs text-ink-muted">
-          {savingField === myServiceField ? 'Saving...' : canEngage ? 'Saved on blur.' : 'Locked until approval.'}
+          <div className="flex items-center justify-between gap-3">
+            <span>
+              {savingField === myServiceField ? 'Saving...' : canEngage ? 'Saved on blur.' : 'Locked until approval.'}
+            </span>
+            <span className="tabular-nums">{myService.length} chars</span>
+          </div>
         </div>
 
         <div className="pt-3 mt-3 border-t border-border">
@@ -226,36 +270,78 @@ export default function DealDetail() {
       ) : null}
 
       {canAcceptDecline ? (
-        <section className="grid grid-cols-2 gap-2">
-          <button
-            className="btn-primary"
-            onClick={() => doAction('accept', () => setDealStatus(deal.id, DEAL_STATUS.ACCEPTED))}
-            disabled={actionBusy === 'accept'}
-          >
-            {actionBusy === 'accept' ? '...' : 'Accept'}
-          </button>
-          <button
-            className="btn-secondary"
-            onClick={() => doAction('decline', () => setDealStatus(deal.id, DEAL_STATUS.DECLINED))}
-            disabled={actionBusy === 'decline'}
-          >
-            {actionBusy === 'decline' ? '...' : 'Decline'}
-          </button>
+        <section className="card p-4 space-y-3">
+          <div className="text-sm text-ink-secondary">
+            <span className="text-ink-muted">They offered:</span>{' '}
+            {deal.initiatorService
+              ? <span className="text-ink-primary font-medium">{deal.initiatorService}</span>
+              : <span className="text-ink-muted italic">No offer details yet.</span>}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              className="btn-primary"
+              onClick={() => doAction('accept', () => setDealStatus(deal.id, DEAL_STATUS.ACCEPTED))}
+              disabled={actionBusy === 'accept'}
+            >
+              {actionBusy === 'accept' ? '...' : 'Accept'}
+            </button>
+            <button
+              className="btn-secondary"
+              onClick={() => doAction('decline', () => setDealStatus(deal.id, DEAL_STATUS.DECLINED))}
+              disabled={actionBusy === 'decline'}
+            >
+              {actionBusy === 'decline' ? '...' : 'Decline'}
+            </button>
+          </div>
         </section>
       ) : null}
 
       {canMarkComplete ? (
-        <button
-          className="btn-primary w-full"
-          onClick={() => doAction('complete', () => markDealComplete(deal.id, user.uid))}
-          disabled={actionBusy === 'complete'}
-        >
-          {actionBusy === 'complete'
-            ? 'Saving...'
-            : iMarkedComplete
-              ? 'Waiting on them to mark complete'
-              : 'Mark complete'}
-        </button>
+        <>
+          <button
+            className="btn-primary w-full"
+            onClick={() => setConfirmCompleteOpen(true)}
+            disabled={actionBusy === 'complete'}
+          >
+            {actionBusy === 'complete'
+              ? 'Saving...'
+              : iMarkedComplete
+                ? 'Waiting on them to mark complete'
+                : 'Mark complete'}
+          </button>
+          {confirmCompleteOpen ? (
+            <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-6">
+              <div className="bg-surface rounded-[20px] w-full max-w-sm p-5 shadow-2xl border border-border">
+                <h3 className="text-lg font-display font-bold text-ink-primary">
+                  Mark exchange complete?
+                </h3>
+                <p className="text-sm text-ink-muted mt-2 leading-relaxed">
+                  Only mark complete once your part of the exchange is finished.
+                  Your review will unlock next.
+                </p>
+                <div className="mt-5 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setConfirmCompleteOpen(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={() => {
+                      setConfirmCompleteOpen(false);
+                      doAction('complete', () => markDealComplete(deal.id, user.uid));
+                    }}
+                  >
+                    Yes, complete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </>
       ) : null}
 
       {deal.status === DEAL_STATUS.COMPLETED || deal.status === DEAL_STATUS.REVIEWED ? (

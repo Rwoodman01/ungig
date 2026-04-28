@@ -48,6 +48,8 @@ export function usePushPermission(uid) {
     setRequesting(true);
     setLastError('');
     try {
+      // eslint-disable-next-line no-console
+      console.log('[Push] requestPermission click', { uid: `${uid.slice(0, 6)}…` });
       const token = await requestPushToken(uid);
       // If permission is granted but we couldn't register a token, surface a
       // lightweight hint so the button doesn't feel like a no-op.

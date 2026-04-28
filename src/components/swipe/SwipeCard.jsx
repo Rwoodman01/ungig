@@ -13,7 +13,7 @@ function Stars({ rating = 0 }) {
   );
 }
 
-export default function SwipeCard({ member, userDoc, glow = '', recycled = false }) {
+export default function SwipeCard({ member, userDoc, onTap, glow = '', recycled = false }) {
   const cover = getMemberCover(member);
   const needsMatch = hasOverlap(member.servicesNeeded, userDoc?.talentsOffered);
   const rating = member.reviewSummary?.average ?? 0;

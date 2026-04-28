@@ -26,7 +26,7 @@ const FLY_OUT_PX = 800; // how far off-screen we fling the card on commit
 const ROTATE_DEG_PER_PX = 0.06;
 
 const SwipeableCard = forwardRef(function SwipeableCard(
-  { children, onSwipe, onDrag, active = true, threshold = 110, className = '' },
+  { children, onSwipe, onDrag, onTap, active = true, threshold = 110, className = '' },
   ref,
 ) {
   const cardRef = useRef(null);
@@ -91,6 +91,10 @@ const SwipeableCard = forwardRef(function SwipeableCard(
     const state = dragStateRef.current;
     if (!state.dragging) return;
     if (e && e.pointerId !== state.pointerId) return;
+    const endX = e?.clientX ?? state.startX;
+    const endY = e?.clientY ?? state.startY;
+    const dxTap = endX - state.startX;
+    const dyTap = endY - state.startY;
     dragStateRef.current = { dragging: false, startX: 0, startY: 0, pointerId: null };
     try {
       cardRef.current?.releasePointerCapture?.(state.pointerId);
@@ -99,6 +103,11 @@ const SwipeableCard = forwardRef(function SwipeableCard(
     }
 
     const dx = transform.x;
+    // Tap detection: pointer down/up with minimal movement.
+    if (Math.abs(dxTap) < 10 && Math.abs(dyTap) < 10) {
+      onTap?.();
+      return;
+    }
     if (dx > threshold) {
       finishSwipe('right');
     } else if (dx < -threshold) {

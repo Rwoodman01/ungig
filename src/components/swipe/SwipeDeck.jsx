@@ -6,6 +6,7 @@
 // react-tinder-card.
 
 import { createRef, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import SwipeCard from './SwipeCard.jsx';
 import SwipeControls from './SwipeControls.jsx';
 import SwipeableCard from './SwipeableCard.jsx';
@@ -18,6 +19,7 @@ export default function SwipeDeck({
   onDecision,
   onShowList,
 }) {
+  const navigate = useNavigate();
   const safePrimary = Array.isArray(members) ? members : [];
   const safeRecycled = Array.isArray(recycledMembers) ? recycledMembers : [];
   const cards = safePrimary.length > 0 ? safePrimary : safeRecycled;
@@ -101,6 +103,7 @@ export default function SwipeDeck({
                 active={isTop}
                 onSwipe={(dir) => handleSwiped(dir, member)}
                 onDrag={isTop ? handleDrag : undefined}
+                onTap={() => navigate(`/members/${member.id}`)}
                 className="absolute inset-0 select-none"
               >
                 <SwipeCard

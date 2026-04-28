@@ -26,7 +26,7 @@ export default function MatchCard({ match }) {
   if (!other) return null;
 
   return (
-    <article className="card overflow-hidden">
+    <article className="card overflow-hidden" onClick={() => navigate(`/members/${other.id}`)}>
       {cover ? (
         <div className="aspect-[16/9] bg-cream">
           <img src={cover} alt="" className="h-full w-full object-cover" loading="lazy" />
@@ -41,7 +41,15 @@ export default function MatchCard({ match }) {
           </div>
         </div>
         <p className="text-sm text-ink-secondary">{getFitReason({ member: other, userDoc })}</p>
-        <button type="button" className="btn-primary w-full" onClick={propose} disabled={busy}>
+        <button
+          type="button"
+          className="btn-primary w-full"
+          onClick={(e) => {
+            e.stopPropagation();
+            propose();
+          }}
+          disabled={busy}
+        >
           {busy ? 'Creating exchange…' : 'Propose Trade'}
         </button>
       </div>

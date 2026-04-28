@@ -225,7 +225,6 @@ service cloud.firestore {
         && request.resource.data.showedUp is bool
         && request.resource.data.wouldTradeAgain is bool
         && request.resource.data.writtenReview is string
-        && request.resource.data.writtenReview.size() >= 20
         && request.resource.data.writtenReview.size() <= 600
         && request.resource.data.skillTags is list
         && request.resource.data.skillTags.size() <= 3

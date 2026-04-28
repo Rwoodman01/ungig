@@ -124,6 +124,16 @@ export async function submitReview({
       exchangeOfferReceiver: (deal.receiverService ?? '').trim().slice(0, 120),
     };
 
+    // Debug: log the exact payload written by this transaction.
+    // eslint-disable-next-line no-console
+    console.log('[submitReview] payload', {
+      reviewTopId: reviewTopRef.id,
+      dealReviewDocId: reviewerId,
+      bothReviewed,
+      reviewedBy,
+      payload,
+    });
+
     tx.set(reviewTopRef, payload);
     tx.set(reviewInDealRef, {
       ...payload,

@@ -1,9 +1,9 @@
 // "Exchanges" tab — every deal the current user is part of.
 // Relies on denormalized `participantIds` for a single array-contains query.
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { collection, orderBy, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, orderBy, query, where } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { db } from '../firebase.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
@@ -23,6 +23,7 @@ const STATUS_LABEL = {
 
 export default function Deals() {
   const { user } = useAuth();
+  const [namesById, setNamesById] = useState({});
   const q = useMemo(
     () => query(
       collection(db, 'deals'),
@@ -37,6 +38,30 @@ export default function Deals() {
   if (error) return <p className="text-red-400 text-sm">Error: {error.message}</p>;
 
   const deals = snap?.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [];
+
+  useEffect(() => {
+    let cancelled = false;
+    const otherIds = Array.from(new Set(deals.flatMap((d) => [d.initiatorId, d.receiverId]).filter(Boolean)))
+      .filter((id) => id !== user.uid);
+    if (!otherIds.length) return undefined;
+
+    (async () => {
+      const entries = await Promise.all(otherIds.map(async (uid) => {
+        try {
+          const s = await getDoc(doc(db, 'users', uid));
+          const name = s.exists() ? (s.data()?.displayName ?? 'Unknown Member') : 'Unknown Member';
+          return [uid, name];
+        } catch {
+          return [uid, 'Unknown Member'];
+        }
+      }));
+      if (!cancelled) {
+        setNamesById((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [deals, user.uid]);
 
   if (deals.length === 0) {
     return (
@@ -58,6 +83,7 @@ export default function Deals() {
       {deals.map((d) => {
         const iAmInitiator = d.initiatorId === user.uid;
         const otherId = iAmInitiator ? d.receiverId : d.initiatorId;
+        const otherName = namesById[otherId] ?? 'Unknown Member';
         return (
           <Link
             key={d.id}
@@ -66,7 +92,7 @@ export default function Deals() {
           >
             <div className="min-w-0">
               <div className="text-sm text-ink-muted">
-                With <span className="text-ink-primary">{otherId.slice(0, 6)}…</span>
+                With <span className="text-ink-primary">{otherName}</span>
                 {iAmInitiator ? ' (you requested)' : ' (they requested)'}
               </div>
               <div className="text-xs text-ink-muted mt-1">

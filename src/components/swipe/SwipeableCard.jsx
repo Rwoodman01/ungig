@@ -105,6 +105,11 @@ const SwipeableCard = forwardRef(function SwipeableCard(
     const dx = transform.x;
     // Tap detection: pointer down/up with minimal movement.
     if (Math.abs(dxTap) < 10 && Math.abs(dyTap) < 10) {
+      // Prevent the synthetic click that follows a pointer sequence from
+      // accidentally activating another control (e.g. bottom nav) during the
+      // route transition.
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
       onTap?.();
       return;
     }

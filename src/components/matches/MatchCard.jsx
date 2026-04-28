@@ -26,7 +26,14 @@ export default function MatchCard({ match }) {
   if (!other) return null;
 
   return (
-    <article className="card overflow-hidden" onClick={() => navigate(`/members/${other.id}`)}>
+    <article
+      className="card overflow-hidden"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        navigate(`/members/${other.id}`);
+      }}
+    >
       {cover ? (
         <div className="aspect-[16/9] bg-cream">
           <img src={cover} alt="" className="h-full w-full object-cover" loading="lazy" />

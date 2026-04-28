@@ -24,28 +24,53 @@ const STATUS_LABEL = {
 export default function Deals() {
   const { user } = useAuth();
   const [namesById, setNamesById] = useState({});
-  if (!user?.uid) return <Spinner />;
+  // Debug breadcrumbs — production-only crash investigation.
+  // eslint-disable-next-line no-console
+  console.error('[Deals] render start', { hasUser: Boolean(user), uid: user?.uid ?? null });
+  if (!user?.uid) {
+    // eslint-disable-next-line no-console
+    console.error('[Deals] missing user.uid at render, showing Spinner');
+    return <Spinner />;
+  }
   const q = useMemo(
-    () => query(
-      collection(db, 'deals'),
-      where('participantIds', 'array-contains', user.uid),
-      orderBy('updatedAt', 'desc'),
-    ),
+    () => {
+      // eslint-disable-next-line no-console
+      console.error('[Deals] building deals query', { uid: user.uid });
+      return query(
+        collection(db, 'deals'),
+        where('participantIds', 'array-contains', user.uid),
+        orderBy('updatedAt', 'desc'),
+      );
+    },
     [user.uid],
   );
   const [snap, loading, error] = useCollection(q);
 
-  if (loading) return <Spinner />;
-  if (error) return <p className="text-red-400 text-sm">Error: {error.message}</p>;
+  if (loading) {
+    // eslint-disable-next-line no-console
+    console.error('[Deals] useCollection loading');
+    return <Spinner />;
+  }
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error('[Deals] useCollection error', { message: error.message, name: error.name, stack: error.stack });
+    return <p className="text-red-400 text-sm">Error: {error.message}</p>;
+  }
 
   const deals = snap?.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [];
+  // eslint-disable-next-line no-console
+  console.error('[Deals] snapshot mapped', { docCount: snap?.docs?.length ?? 0, dealsCount: deals.length });
 
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line no-console
+    console.error('[Deals] hydration effect start', { dealsCount: deals.length, uid: user.uid });
     try {
       const otherIds = Array.from(
         new Set(deals.flatMap((d) => [d.initiatorId, d.receiverId]).filter(Boolean)),
       ).filter((id) => id !== user.uid);
+      // eslint-disable-next-line no-console
+      console.error('[Deals] hydration otherIds computed', { otherIdsCount: otherIds.length, otherIds });
       if (!otherIds.length) return undefined;
 
       (async () => {
@@ -58,24 +83,34 @@ export default function Deals() {
                 : 'Unknown Member';
               return [uid, name];
             } catch {
+              // eslint-disable-next-line no-console
+              console.error('[Deals] hydration getDoc failed', { otherUid: uid });
               return [uid, 'Unknown Member'];
             }
           }));
           if (!cancelled) {
+            // eslint-disable-next-line no-console
+            console.error('[Deals] hydration success; setting namesById', { entriesCount: entries.length });
             setNamesById((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
           }
-        } catch {
+        } catch (e) {
           // ignore — deals page should still render even if hydration fails
+          // eslint-disable-next-line no-console
+          console.error('[Deals] hydration Promise.all failed', { message: e?.message, name: e?.name, stack: e?.stack });
         }
       })();
-    } catch {
+    } catch (e) {
       // ignore — deals page should still render even if hydration setup fails
+      // eslint-disable-next-line no-console
+      console.error('[Deals] hydration outer setup failed', { message: e?.message, name: e?.name, stack: e?.stack });
     }
 
     return () => { cancelled = true; };
   }, [deals, user.uid]);
 
   if (deals.length === 0) {
+    // eslint-disable-next-line no-console
+    console.error('[Deals] no deals; rendering EmptyState');
     return (
       <EmptyState
         title="No exchanges yet"
@@ -93,29 +128,40 @@ export default function Deals() {
     <div className="space-y-3">
       <h1 className="text-2xl font-display font-bold text-ink-primary">Exchanges</h1>
       {deals.map((d) => {
-        const iAmInitiator = d.initiatorId === user.uid;
-        const otherId = iAmInitiator ? d.receiverId : d.initiatorId;
-        const otherName = namesById[otherId] ?? 'Unknown Member';
-        return (
-          <Link
-            key={d.id}
-            to={`/deals/${d.id}`}
-            className="card p-4 flex items-center justify-between gap-3"
-          >
-            <div className="min-w-0">
-              <div className="text-sm text-ink-muted">
-                With <span className="text-ink-primary">{otherName}</span>
-                {iAmInitiator ? ' (you requested)' : ' (they requested)'}
+        try {
+          const iAmInitiator = d.initiatorId === user.uid;
+          const otherId = iAmInitiator ? d.receiverId : d.initiatorId;
+          const otherName = namesById[otherId] ?? 'Unknown Member';
+          return (
+            <Link
+              key={d.id}
+              to={`/deals/${d.id}`}
+              className="card p-4 flex items-center justify-between gap-3"
+            >
+              <div className="min-w-0">
+                <div className="text-sm text-ink-muted">
+                  With <span className="text-ink-primary">{otherName}</span>
+                  {iAmInitiator ? ' (you requested)' : ' (they requested)'}
+                </div>
+                <div className="text-xs text-ink-muted mt-1">
+                  Updated {timeAgo(d.updatedAt)}
+                </div>
               </div>
-              <div className="text-xs text-ink-muted mt-1">
-                Updated {timeAgo(d.updatedAt)}
-              </div>
-            </div>
-            <span className="chip-gold text-[10px]">
-              {STATUS_LABEL[d.status] ?? d.status}
-            </span>
-          </Link>
-        );
+              <span className="chip-gold text-[10px]">
+                {STATUS_LABEL[d.status] ?? d.status}
+              </span>
+            </Link>
+          );
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.error('[Deals] render row failed', {
+            dealId: d?.id,
+            message: e?.message,
+            name: e?.name,
+            stack: e?.stack,
+          });
+          throw e;
+        }
       })}
     </div>
   );

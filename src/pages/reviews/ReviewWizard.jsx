@@ -26,8 +26,8 @@ export default function ReviewWizard() {
   const navigate = useNavigate();
   const { user, canEngage, loading: authLoading } = useAuth();
   const dealRef = useMemo(
-    () => (user?.uid && dealId ? doc(db, 'deals', dealId) : null),
-    [user?.uid, dealId],
+    () => (!authLoading && user?.uid && dealId ? doc(db, 'deals', dealId) : null),
+    [authLoading, user?.uid, dealId],
   );
   const [dealSnap, loading, err] = useDocument(dealRef);
   const [other, setOther] = useState(null);
@@ -45,12 +45,18 @@ export default function ReviewWizard() {
 
   useEffect(() => {
     let c = false;
-    if (!deal || !user) return undefined;
-    fetchOtherParticipant(deal, user.uid).then((p) => {
-      if (!c) setOther(p);
-    });
+    if (authLoading || !deal || !user?.uid) return undefined;
+    if (!deal.participantIds?.includes(user.uid)) return undefined;
+    fetchOtherParticipant(deal, user.uid)
+      .then((p) => {
+        if (!c) setOther(p);
+      })
+      .catch(() => {
+        // If we can't read the other user doc (permissions/offline), keep flow intact.
+        if (!c) setOther(null);
+      });
     return () => { c = true; };
-  }, [deal?.id, user?.uid]);
+  }, [authLoading, deal?.id, user?.uid]);
 
   const closed = useMemo(() => {
     if (!deal?.completedAt) return false;
@@ -71,14 +77,25 @@ export default function ReviewWizard() {
   };
 
   const doSubmit = async () => {
-    if (!user || !other || !deal) return;
+    const reviewerId = user?.uid ?? null;
+    const revieweeId = other?.id ?? null;
+    const resolvedDealId = deal?.id ?? null;
+    if (!reviewerId || !revieweeId || !resolvedDealId) return;
     setBusy(true);
     setError('');
     try {
+      // Ensure auth is fully established before doing the transaction write.
+      await user.getIdToken?.();
+      // eslint-disable-next-line no-console
+      console.log('[ReviewWizard] submit preflight', {
+        dealId: resolvedDealId,
+        reviewerId,
+        revieweeId,
+      });
       await submitReview({
-        dealId: deal.id,
-        reviewerId: user.uid,
-        revieweeId: other.id,
+        dealId: resolvedDealId,
+        reviewerId,
+        revieweeId,
         starRating,
         showedUp,
         wouldTradeAgain,

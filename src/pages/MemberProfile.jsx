@@ -19,6 +19,7 @@ import UnreviewedFlag from '../components/reviews/UnreviewedFlag.jsx';
 import ReviewWarningBanner from '../components/reviews/ReviewWarningBanner.jsx';
 import PhotoGrid from '../components/photos/PhotoGrid.jsx';
 import CompletedWorkSection from '../components/photos/CompletedWorkSection.jsx';
+import GiftedScoreDisplay from '../components/ui/GiftedScoreDisplay.jsx';
 import { formatDate } from '../lib/format.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { createDeal } from '../lib/deals.js';
@@ -61,6 +62,7 @@ export default function MemberProfile() {
   }
 
   const member = { id: memberSnap.id, ...memberSnap.data() };
+  const giftedScore = member.giftedScore ?? 50;
   const isSelf = user?.uid === member.id;
   const rawReviews = reviewsSnap?.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [];
   const visibleReviews = rawReviews.filter((r) => r.visibleAt != null && r.moderationStatus !== 'removed');
@@ -100,6 +102,7 @@ export default function MemberProfile() {
               <span><strong className="text-green">{member.tradeCount ?? 0}</strong> gifts</span>
               <span><strong className="text-green">{member.badges?.length ?? 0}</strong> badges</span>
             </div>
+            <GiftedScoreDisplay score={giftedScore} className="ml-auto" />
             <UnreviewedFlag count={staleUnreviewed} />
           </div>
         </div>

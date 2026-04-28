@@ -1,6 +1,7 @@
 import clsx from 'clsx';
 import { getMemberCover, hasOverlap } from '../../lib/matching.js';
 import GiffMatchIndicator from './GiffMatchIndicator.jsx';
+import GiftedScoreBadge from '../ui/GiftedScoreBadge.jsx';
 
 function Stars({ rating = 0 }) {
   const rounded = Math.max(0, Math.min(5, Math.round(rating)));
@@ -16,6 +17,7 @@ export default function SwipeCard({ member, userDoc, glow = '', recycled = false
   const cover = getMemberCover(member);
   const needsMatch = hasOverlap(member.servicesNeeded, userDoc?.talentsOffered);
   const rating = member.reviewSummary?.average ?? 0;
+  const giftedScore = member.giftedScore ?? 50;
 
   return (
     <div
@@ -31,11 +33,14 @@ export default function SwipeCard({ member, userDoc, glow = '', recycled = false
 
       <div className="absolute top-4 left-4 right-4 flex items-start justify-between gap-3">
         <GiffMatchIndicator show={needsMatch} />
-        {recycled ? (
-          <span className="rounded-full bg-white/85 text-navyHero text-xs font-semibold px-3 py-1.5">
-            Seen before
-          </span>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <GiftedScoreBadge score={giftedScore} variant="pill" />
+          {recycled ? (
+            <span className="rounded-full bg-white/85 text-navyHero text-xs font-semibold px-3 py-1.5">
+              Seen before
+            </span>
+          ) : null}
+        </div>
       </div>
 
       <div className="absolute inset-x-0 bottom-0 p-5 text-white space-y-4">

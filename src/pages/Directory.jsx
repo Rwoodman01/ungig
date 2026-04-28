@@ -11,6 +11,7 @@ import { useCollection } from 'react-firebase-hooks/firestore';
 import { db } from '../firebase.js';
 import { MEMBER_STATUS } from '../lib/constants.js';
 import Avatar from '../components/ui/Avatar.jsx';
+import GiftedScoreBadge from '../components/ui/GiftedScoreBadge.jsx';
 import Spinner from '../components/ui/Spinner.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
@@ -22,6 +23,7 @@ import MatchCelebrationModal from '../components/swipe/MatchCelebrationModal.jsx
 
 function MemberCard({ member }) {
   const cover = member.portfolioPhotos?.[0]?.url ?? member.proofPhotos?.[0] ?? '';
+  const score = member.giftedScore ?? 50;
   return (
     <Link
       to={`/members/${member.id}`}
@@ -42,6 +44,7 @@ function MemberCard({ member }) {
             {member.badges?.length ? (
               <span className="chip-gold text-[10px]">{member.badges.length} ★</span>
             ) : null}
+            <GiftedScoreBadge score={score} />
           </div>
           {member.location ? (
             <div className="text-xs text-ink-300 truncate">{member.location}</div>

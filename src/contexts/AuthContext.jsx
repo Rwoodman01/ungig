@@ -60,6 +60,7 @@ function initialUserDoc(user) {
     memberSince: serverTimestamp(),
     badges: [],
     tradeCount: 0,
+    giftedScore: 50,
     connections: [],
     referredBy: null,
     role: isAdminEmail(user.email) ? 'admin' : 'member',

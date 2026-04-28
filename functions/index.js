@@ -6,12 +6,31 @@ const {
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const { getMessaging } = require('firebase-admin/messaging');
+const { recalculateGiftedScore } = require('./giftedScore.js');
 
 initializeApp();
 
 const db = getFirestore();
 
 const POST_FLAG_HIDE_THRESHOLD = 3;
+
+function isObject(x) {
+  return x && typeof x === 'object' && !Array.isArray(x);
+}
+
+function pick(obj, keys) {
+  const out = {};
+  keys.forEach((k) => {
+    out[k] = obj?.[k];
+  });
+  return out;
+}
+
+function shallowChanged(a, b, keys) {
+  const left = pick(a, keys);
+  const right = pick(b, keys);
+  return keys.some((k) => JSON.stringify(left[k]) !== JSON.stringify(right[k]));
+}
 
 function matchIdFor(a, b) {
   return [a, b].sort().join('_');
@@ -151,6 +170,117 @@ exports.onNotificationCreated = onDocumentCreated(
         batch.delete(db.doc(`users/${uid}/fcmTokens/${id}`));
       });
       await batch.commit();
+    }
+  },
+);
+
+// Gifted Score ────────────────────────────────────────────────────────────────
+//
+// Keep `users/{uid}.giftedScore` up to date based on activity and profile data.
+// Breakdown is written privately to `users/{uid}/giftedScoreMeta/breakdown`.
+
+exports.onReviewForScoreWritten = onDocumentWritten(
+  'reviews/{reviewId}',
+  async (event) => {
+    const after = event.data?.after;
+    if (!after?.exists) return;
+    const review = after.data();
+    const uid = review.revieweeId;
+    if (!uid) return;
+    await recalculateGiftedScore(db, uid);
+  },
+);
+
+exports.onDealForScoreWritten = onDocumentWritten(
+  'deals/{dealId}',
+  async (event) => {
+    const before = event.data?.before?.exists ? event.data.before.data() : null;
+    const after = event.data?.after?.exists ? event.data.after.data() : null;
+    if (!after) return;
+
+    // Set proposalFirstResponseAt exactly once: first time a deal leaves 'requested'.
+    const leftRequested =
+      before?.status === 'requested'
+      && after.status
+      && after.status !== 'requested'
+      && !after.proposalFirstResponseAt;
+
+    if (leftRequested) {
+      await db.doc(`deals/${event.params.dealId}`).set(
+        {
+          proposalFirstResponseAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+    }
+
+    const participants = Array.isArray(after.participantIds) ? after.participantIds : [];
+    const initiatorId = after.initiatorId;
+    const receiverId = after.receiverId;
+    const uids = Array.from(new Set([...participants, initiatorId, receiverId].filter(Boolean)));
+    if (!uids.length) return;
+
+    // Recalc on create, completion, dispute changes, or first-response timestamp.
+    const isCreate = !before && Boolean(after);
+    const relevant = !before || shallowChanged(before, after, [
+      'status',
+      'completedAt',
+      'disputeStatus',
+      'proposalFirstResponseAt',
+    ]);
+
+    if (isCreate || relevant) {
+      await Promise.all(uids.map((uid) => recalculateGiftedScore(db, uid)));
+    }
+  },
+);
+
+exports.onUserForScoreWritten = onDocumentWritten(
+  'users/{uid}',
+  async (event) => {
+    const before = event.data?.before?.exists ? event.data.before.data() : null;
+    const after = event.data?.after?.exists ? event.data.after.data() : null;
+    if (!after) return;
+
+    // Avoid feedback loops: ignore writes that only touch score bookkeeping.
+    if (before && !shallowChanged(before, after, [
+      'photoURL',
+      'profilePhotoPath',
+      'bio',
+      'location',
+      'talentsOffered',
+      'servicesNeeded',
+      'giftedScore',
+      'giftedScoreUpdatedAt',
+    ])) {
+      return;
+    }
+
+    const changedProfileFields = !before || shallowChanged(before, after, [
+      'photoURL',
+      'profilePhotoPath',
+      'bio',
+      'location',
+      'talentsOffered',
+      'servicesNeeded',
+    ]);
+
+    const changedOnlyScoreFields = before && !changedProfileFields
+      && shallowChanged(before, after, ['giftedScore', 'giftedScoreUpdatedAt'])
+      && !shallowChanged(before, after, [
+        'photoURL',
+        'profilePhotoPath',
+        'bio',
+        'location',
+        'talentsOffered',
+        'servicesNeeded',
+      ]);
+
+    if (changedOnlyScoreFields) return;
+
+    if (changedProfileFields) {
+      await recalculateGiftedScore(db, event.params.uid);
     }
   },
 );

@@ -8,10 +8,12 @@ import { db } from '../firebase.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
 import Badge from '../components/ui/Badge.jsx';
+import GiftedScoreDisplay from '../components/ui/GiftedScoreDisplay.jsx';
 import TagInput from '../components/ui/TagInput.jsx';
 import PhotoGrid from '../components/photos/PhotoGrid.jsx';
 import ProfilePhotoUploader from '../components/photos/ProfilePhotoUploader.jsx';
 import PortfolioPhotoManager from '../components/photos/PortfolioPhotoManager.jsx';
+import GiftedScoreBreakdown from '../components/profile/GiftedScoreBreakdown.jsx';
 import { formatDate } from '../lib/format.js';
 import { LIMITS, MEMBER_STATUS } from '../lib/constants.js';
 
@@ -49,7 +51,10 @@ export default function MyProfile() {
             <span><strong className="text-green">{userDoc.badges?.length ?? 0}</strong> badges</span>
           </div>
         </div>
+        <GiftedScoreDisplay score={userDoc.giftedScore ?? 50} />
       </div>
+
+      <GiftedScoreBreakdown uid={user.uid} publicScore={userDoc.giftedScore ?? 50} />
 
       {userDoc.bio ? (
         <p className="text-sm text-ink-secondary leading-relaxed">{userDoc.bio}</p>

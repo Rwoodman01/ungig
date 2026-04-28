@@ -149,6 +149,13 @@ service cloud.firestore {
         // The backend (Cloud Functions admin SDK) bypasses these rules.
         allow read, write: if isSelf(uid);
       }
+
+      match /giftedScoreMeta/{docId} {
+        // Private, per-user Gifted Score breakdown (owner-only).
+        // Written by Cloud Functions via Admin SDK.
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
     }
 
     match /deals/{dealId} {

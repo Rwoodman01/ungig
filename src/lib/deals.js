@@ -39,6 +39,9 @@ export async function createDeal({ initiatorId, receiverId }) {
     status: DEAL_STATUS.REQUESTED,
     completedBy: {},
     reviewedBy: {},
+    // Gifted Score fields (set/maintained by Cloud Functions).
+    proposalFirstResponseAt: null,
+    disputeStatus: 'none',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });

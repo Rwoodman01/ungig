@@ -35,11 +35,17 @@ export function useMatches(uid) {
       const out = await Promise.all(rows.map(async (match) => {
         const otherUid = match.participantIds?.find((id) => id !== uid);
         if (!otherUid) return { ...match, other: null };
-        const userSnap = await getDoc(doc(db, 'users', otherUid));
-        return {
-          ...match,
-          other: userSnap.exists() ? { id: userSnap.id, ...userSnap.data() } : null,
-        };
+        try {
+          const userSnap = await getDoc(doc(db, 'users', otherUid));
+          return {
+            ...match,
+            other: userSnap.exists() ? { id: userSnap.id, ...userSnap.data() } : null,
+          };
+        } catch {
+          // If the other user's doc can't be read (permissions, deleted user, offline),
+          // keep the match so one bad read doesn't blank the whole list.
+          return { ...match, other: null };
+        }
       }));
       if (!cancelled) setHydrated(out);
     })();

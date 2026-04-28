@@ -24,8 +24,12 @@ function ms(ts) {
 export default function ReviewWizard() {
   const { dealId } = useParams();
   const navigate = useNavigate();
-  const { user, canEngage } = useAuth();
-  const [dealSnap, loading, err] = useDocument(doc(db, 'deals', dealId));
+  const { user, canEngage, loading: authLoading } = useAuth();
+  const dealRef = useMemo(
+    () => (user?.uid && dealId ? doc(db, 'deals', dealId) : null),
+    [user?.uid, dealId],
+  );
+  const [dealSnap, loading, err] = useDocument(dealRef);
   const [other, setOther] = useState(null);
   const [step, setStep] = useState(1);
   const [busy, setBusy] = useState(false);
@@ -89,9 +93,17 @@ export default function ReviewWizard() {
     }
   };
 
-  if (loading) return <Spinner label="Loading…" />;
+  if (authLoading || !dealRef || loading) return <Spinner label="Loading…" />;
   if (err) return <p className="text-coral text-sm p-4">{err.message}</p>;
   if (!deal) return <p className="p-4 text-ink-secondary">Exchange not found.</p>;
+  // Debug: if we ever trip a permissions error, log what we had in state.
+  // eslint-disable-next-line no-console
+  console.log('[ReviewWizard] permission-check inputs', {
+    dealId,
+    uid: user?.uid ?? null,
+    participantIds: deal?.participantIds ?? null,
+    status: deal?.status ?? null,
+  });
   if (!deal.participantIds?.includes(user?.uid)) {
     return <p className="p-4 text-ink-secondary">You are not part of this exchange.</p>;
   }

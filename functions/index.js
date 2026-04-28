@@ -191,6 +191,50 @@ exports.onReviewForScoreWritten = onDocumentWritten(
   },
 );
 
+// Review reveal ───────────────────────────────────────────────────────────────
+//
+// Blind reviews: reviews are written immediately with visibleAt == null.
+// Once BOTH participants have submitted for the same deal, reveal both by
+// setting visibleAt on both top-level review docs. Admin SDK bypasses rules.
+
+exports.onReviewCreatedReveal = onDocumentCreated(
+  'reviews/{reviewId}',
+  async (event) => {
+    const review = event.data?.data();
+    if (!review) return;
+    const dealId = review.dealId;
+    if (!dealId) return;
+    if (review.visibleAt != null) return;
+
+    const dealSnap = await db.doc(`deals/${dealId}`).get();
+    if (!dealSnap.exists) return;
+    const deal = dealSnap.data() || {};
+    const participants = Array.isArray(deal.participantIds) ? deal.participantIds : [];
+    if (participants.length !== 2) return;
+
+    // Fetch all reviews for this deal and keep only participant submissions.
+    const reviewsSnap = await db.collection('reviews').where('dealId', '==', dealId).get();
+    const rows = reviewsSnap.docs
+      .map((d) => ({ id: d.id, ...d.data() }))
+      .filter((r) => participants.includes(r.reviewerId));
+
+    if (rows.length < 2) return;
+
+    // Only reveal once: if either already has visibleAt set, no-op.
+    const alreadyRevealed = rows.some((r) => r.visibleAt != null);
+    if (alreadyRevealed) return;
+
+    const vis = FieldValue.serverTimestamp();
+    const batch = db.batch();
+    rows.slice(0, 2).forEach((r) => {
+      batch.update(db.doc(`reviews/${r.id}`), { visibleAt: vis, updatedAt: vis });
+    });
+    // Keep deal status aligned for downstream UI.
+    batch.set(db.doc(`deals/${dealId}`), { status: 'reviewed', updatedAt: vis }, { merge: true });
+    await batch.commit();
+  },
+);
+
 exports.onDealForScoreWritten = onDocumentWritten(
   'deals/{dealId}',
   async (event) => {

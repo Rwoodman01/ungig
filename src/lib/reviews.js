@@ -53,9 +53,6 @@ export async function submitReview({
   skillTags = [],
 }) {
   const trimmed = (writtenReview ?? '').trim();
-  if (trimmed.length < REVIEW_LIMITS.WRITTEN_MIN) {
-    throw new Error(`Please write at least ${REVIEW_LIMITS.WRITTEN_MIN} characters.`);
-  }
   if (trimmed.length > REVIEW_LIMITS.WRITTEN_MAX) {
     throw new Error('Review is too long.');
   }
@@ -91,21 +88,6 @@ export async function submitReview({
     const reviewedBy = { ...(deal.reviewedBy ?? {}), [reviewerId]: true };
     const bothReviewed = !!reviewedBy[initiatorId] && !!reviewedBy[receiverId];
 
-    // Firestore requires every tx.get() before any tx.set/update/delete.
-    // When both parties have now reviewed, we must read the partner's in-deal
-    // review stub (for topLevelReviewId) before writing our new review docs.
-    let otherTopRef = null;
-    if (bothReviewed) {
-      const otherId = reviewerId === initiatorId ? receiverId : initiatorId;
-      const otherDealReviewRef = doc(db, 'deals', dealId, 'reviews', otherId);
-      const otherSnap = await tx.get(otherDealReviewRef);
-      if (!otherSnap.exists()) throw new Error('Partner review record missing.');
-      const otherTopId = otherSnap.data().topLevelReviewId;
-      if (!otherTopId) throw new Error('Partner review reference missing.');
-      otherTopRef = doc(db, 'reviews', otherTopId);
-    }
-
-    const vis = bothReviewed ? serverTimestamp() : null;
     const payload = {
       dealId,
       reviewerId,
@@ -117,7 +99,8 @@ export async function submitReview({
       writtenReview: trimmed,
       skillTags: (skillTags ?? []).slice(0, REVIEW_LIMITS.SKILL_TAGS_MAX),
       submittedAt: serverTimestamp(),
-      visibleAt: vis,
+      // Reveal is handled by a Cloud Function once both sides submit.
+      visibleAt: null,
       flagged: false,
       flags: [],
       suppressed: false,
@@ -142,7 +125,6 @@ export async function submitReview({
     });
 
     if (bothReviewed) {
-      tx.update(otherTopRef, { visibleAt: vis });
       tx.update(dealRef, {
         reviewedBy,
         status: DEAL_STATUS.REVIEWED,

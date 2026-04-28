@@ -43,31 +43,19 @@ export default function Deals() {
   );
   const [snap, loading, error] = useCollection(q);
 
-  if (!uid) {
-    // eslint-disable-next-line no-console
-    console.error('[Deals] missing user.uid at render, showing Spinner');
-    return <Spinner />;
-  }
-  if (loading) {
-    // eslint-disable-next-line no-console
-    console.error('[Deals] useCollection loading');
-    return <Spinner />;
-  }
-  if (error) {
-    // eslint-disable-next-line no-console
-    console.error('[Deals] useCollection error', { message: error.message, name: error.name, stack: error.stack });
-    return <p className="text-red-400 text-sm">Error: {error.message}</p>;
-  }
-
-  const deals = snap?.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [];
+  // Always define `deals` so hooks can run in a stable order.
+  const deals = uid && snap
+    ? (snap.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [])
+    : [];
   // eslint-disable-next-line no-console
-  console.error('[Deals] snapshot mapped', { docCount: snap?.docs?.length ?? 0, dealsCount: deals.length });
+  console.error('[Deals] snapshot mapped', { docCount: snap?.docs?.length ?? 0, dealsCount: deals.length, loading });
 
+  // IMPORTANT: keep hook order stable by declaring effects before any early returns.
   useEffect(() => {
     let cancelled = false;
     // eslint-disable-next-line no-console
     console.error('[Deals] hydration effect start', { dealsCount: deals.length, uid });
-    if (!uid) return () => { cancelled = true; };
+    if (!uid || loading || error) return () => { cancelled = true; };
     try {
       const otherIds = Array.from(
         new Set(deals.flatMap((d) => [d.initiatorId, d.receiverId]).filter(Boolean)),
@@ -109,7 +97,23 @@ export default function Deals() {
     }
 
     return () => { cancelled = true; };
-  }, [deals, uid]);
+  }, [deals, uid, loading, error]);
+
+  if (!uid) {
+    // eslint-disable-next-line no-console
+    console.error('[Deals] missing user.uid at render, showing Spinner');
+    return <Spinner />;
+  }
+  if (loading) {
+    // eslint-disable-next-line no-console
+    console.error('[Deals] useCollection loading');
+    return <Spinner />;
+  }
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error('[Deals] useCollection error', { message: error.message, name: error.name, stack: error.stack });
+    return <p className="text-red-400 text-sm">Error: {error.message}</p>;
+  }
 
   if (deals.length === 0) {
     // eslint-disable-next-line no-console

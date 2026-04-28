@@ -109,7 +109,8 @@ export async function submitReview({
       dealId,
       reviewerId,
       revieweeId,
-      starRating: Number(starRating),
+      // Firestore rules require `starRating` to be an integer type.
+      starRating: Math.max(1, Math.min(5, Math.trunc(Number(starRating) || 0))),
       showedUp: !!showedUp,
       wouldTradeAgain: !!wouldTradeAgain,
       writtenReview: trimmed,

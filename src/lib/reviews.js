@@ -105,6 +105,7 @@ export async function submitReview({
       otherTopRef = doc(db, 'reviews', otherTopId);
     }
 
+    const vis = bothReviewed ? serverTimestamp() : null;
     const payload = {
       dealId,
       reviewerId,
@@ -116,7 +117,7 @@ export async function submitReview({
       writtenReview: trimmed,
       skillTags: (skillTags ?? []).slice(0, REVIEW_LIMITS.SKILL_TAGS_MAX),
       submittedAt: serverTimestamp(),
-      visibleAt: null,
+      visibleAt: vis,
       flagged: false,
       flags: [],
       suppressed: false,
@@ -141,8 +142,6 @@ export async function submitReview({
     });
 
     if (bothReviewed) {
-      const vis = serverTimestamp();
-      tx.update(reviewTopRef, { visibleAt: vis });
       tx.update(otherTopRef, { visibleAt: vis });
       tx.update(dealRef, {
         reviewedBy,

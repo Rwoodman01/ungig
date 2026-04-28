@@ -24,28 +24,30 @@ const STATUS_LABEL = {
 export default function Deals() {
   const { user } = useAuth();
   const [namesById, setNamesById] = useState({});
+  const uid = user?.uid ?? null;
   // Debug breadcrumbs — production-only crash investigation.
   // eslint-disable-next-line no-console
-  console.error('[Deals] render start', { hasUser: Boolean(user), uid: user?.uid ?? null });
-  if (!user?.uid) {
+  console.error('[Deals] render start', { hasUser: Boolean(user), uid });
+  const q = useMemo(
+    () => {
+      // eslint-disable-next-line no-console
+      console.error('[Deals] building deals query', { uid });
+      if (!uid) return null;
+      return query(
+        collection(db, 'deals'),
+        where('participantIds', 'array-contains', uid),
+        orderBy('updatedAt', 'desc'),
+      );
+    },
+    [uid],
+  );
+  const [snap, loading, error] = useCollection(q);
+
+  if (!uid) {
     // eslint-disable-next-line no-console
     console.error('[Deals] missing user.uid at render, showing Spinner');
     return <Spinner />;
   }
-  const q = useMemo(
-    () => {
-      // eslint-disable-next-line no-console
-      console.error('[Deals] building deals query', { uid: user.uid });
-      return query(
-        collection(db, 'deals'),
-        where('participantIds', 'array-contains', user.uid),
-        orderBy('updatedAt', 'desc'),
-      );
-    },
-    [user.uid],
-  );
-  const [snap, loading, error] = useCollection(q);
-
   if (loading) {
     // eslint-disable-next-line no-console
     console.error('[Deals] useCollection loading');
@@ -64,11 +66,12 @@ export default function Deals() {
   useEffect(() => {
     let cancelled = false;
     // eslint-disable-next-line no-console
-    console.error('[Deals] hydration effect start', { dealsCount: deals.length, uid: user.uid });
+    console.error('[Deals] hydration effect start', { dealsCount: deals.length, uid });
+    if (!uid) return () => { cancelled = true; };
     try {
       const otherIds = Array.from(
         new Set(deals.flatMap((d) => [d.initiatorId, d.receiverId]).filter(Boolean)),
-      ).filter((id) => id !== user.uid);
+      ).filter((id) => id !== uid);
       // eslint-disable-next-line no-console
       console.error('[Deals] hydration otherIds computed', { otherIdsCount: otherIds.length, otherIds });
       if (!otherIds.length) return undefined;
@@ -106,7 +109,7 @@ export default function Deals() {
     }
 
     return () => { cancelled = true; };
-  }, [deals, user.uid]);
+  }, [deals, uid]);
 
   if (deals.length === 0) {
     // eslint-disable-next-line no-console
@@ -129,7 +132,7 @@ export default function Deals() {
       <h1 className="text-2xl font-display font-bold text-ink-primary">Exchanges</h1>
       {deals.map((d) => {
         try {
-          const iAmInitiator = d.initiatorId === user.uid;
+          const iAmInitiator = d.initiatorId === uid;
           const otherId = iAmInitiator ? d.receiverId : d.initiatorId;
           const otherName = namesById[otherId] ?? 'Unknown Member';
           return (

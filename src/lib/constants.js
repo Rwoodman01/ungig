@@ -105,6 +105,10 @@ export const NOTIFICATION_TYPES = Object.freeze({
   TRADE_ACCEPTED: 'trade_accepted',
   TRADE_SCHEDULE_SET: 'trade_schedule_set',
   TRADE_COMPLETED: 'trade_completed',
+  TRADE_COUNTERED: 'trade_countered',
+  TRADE_CONFIRM_WAITING: 'trade_confirm_waiting',
+  TRADE_MARK_COMPLETE_PENDING: 'trade_mark_complete_pending',
+  NEW_MESSAGE: 'new_message',
   REVIEW_RECEIVED: 'review_received',
   REVIEW_REMINDER: 'review_reminder',
   REVIEWS_CLOSED: 'reviews_closed',
@@ -194,6 +198,26 @@ export function getNotificationCopy(type, payload = {}) {
     case NOTIFICATION_TYPES.TRADE_COMPLETED:
       return {
         message: `Your exchange with ${name} is done! Leave your review so they can trade again.`,
+        link: dealId ? `/deals/${dealId}` : '/deals',
+      };
+    case NOTIFICATION_TYPES.TRADE_COUNTERED:
+      return {
+        message: `${name} countered the exchange. Your turn to update your offer.`,
+        link: dealId ? `/deals/${dealId}` : '/deals',
+      };
+    case NOTIFICATION_TYPES.TRADE_CONFIRM_WAITING:
+      return {
+        message: `${name} confirmed the agreed terms. Your turn to confirm so you can schedule.`,
+        link: dealId ? `/deals/${dealId}` : '/deals',
+      };
+    case NOTIFICATION_TYPES.TRADE_MARK_COMPLETE_PENDING:
+      return {
+        message: `${name} marked the exchange complete. Mark yours when you're ready so reviews can open.`,
+        link: dealId ? `/deals/${dealId}` : '/deals',
+      };
+    case NOTIFICATION_TYPES.NEW_MESSAGE:
+      return {
+        message: `${name} sent you a message.`,
         link: dealId ? `/deals/${dealId}` : '/deals',
       };
     case NOTIFICATION_TYPES.REVIEW_REMINDER:

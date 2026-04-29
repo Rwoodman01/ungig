@@ -111,32 +111,98 @@ exports.onNotificationCreated = onDocumentCreated(
   async (event) => {
     const { uid, nid } = event.params;
     const notification = event.data?.data();
-    if (!notification) return;
+    if (!notification) {
+      // eslint-disable-next-line no-console
+      console.warn('[Gifted FCM] onNotificationCreated: no notification payload', { uid, nid });
+      return;
+    }
+
+    // eslint-disable-next-line no-console
+    console.log('[Gifted FCM] onNotificationCreated start', {
+      uid,
+      nid,
+      type: notification.type,
+      messagePreview: String(notification.message ?? '').slice(0, 120),
+      link: notification.link,
+    });
 
     // Fetch all FCM tokens stored for this user (one per device).
     const tokensSnap = await db
       .collection(`users/${uid}/fcmTokens`)
       .get();
 
-    if (tokensSnap.empty) return;
+    if (tokensSnap.empty) {
+      // eslint-disable-next-line no-console
+      console.warn('[Gifted FCM] no token documents — push skipped', {
+        uid,
+        nid,
+        path: `users/${uid}/fcmTokens`,
+        docCount: 0,
+      });
+      return;
+    }
 
     const tokenDocs = tokensSnap.docs;
-    const tokens = tokenDocs.map((d) => d.data().token).filter(Boolean);
-    if (!tokens.length) return;
+    const tokenRows = tokenDocs.map((d) => ({
+      docId: d.id,
+      token: d.data()?.token ?? null,
+      hasToken: Boolean(d.data()?.token),
+    }));
+    const tokens = tokenRows.map((r) => r.token).filter(Boolean);
+
+    const perDoc = tokenRows.map((r) => ({
+      docId: r.docId,
+      hasToken: r.hasToken,
+      tokenLength: r.token ? String(r.token).length : 0,
+      token: r.token ?? '(missing)',
+    }));
+
+    // eslint-disable-next-line no-console
+    console.log('[Gifted FCM] token query result', {
+      uid,
+      nid,
+      rawDocCount: tokenDocs.length,
+      usableTokenCount: tokens.length,
+      perDoc,
+    });
+
+    if (!tokens.length) {
+      // eslint-disable-next-line no-console
+      console.warn('[Gifted FCM] fcmTokens docs exist but no usable token field — push skipped', {
+        uid,
+        nid,
+        docIds: tokenDocs.map((d) => d.id),
+      });
+      return;
+    }
+
+    const title = 'Gifted';
+    const body = notification.message ?? 'You have a new notification.';
+    const link = notification.link ?? '/';
 
     const message = {
       notification: {
-        title: 'Gifted',
-        body: notification.message ?? 'You have a new notification.',
+        title,
+        body,
       },
       data: {
-        link: notification.link ?? '/',
+        link,
         notificationId: nid,
       },
       webpush: {
+        // Explicit webpush block helps WebKit / Safari PWA delivery; some clients
+        // ignore top-level `notification` without this.
+        notification: {
+          title,
+          body,
+          icon: '/icons/icon-192.png',
+          badge: '/icons/icon-192.png',
+        },
         fcmOptions: {
-          // Clicking the notification navigates here (Chrome / Edge).
-          link: notification.link ?? '/',
+          link,
+        },
+        headers: {
+          Urgency: 'high',
         },
       },
       tokens,
@@ -144,11 +210,49 @@ exports.onNotificationCreated = onDocumentCreated(
 
     let response;
     try {
+      // eslint-disable-next-line no-console
+      console.log('[Gifted FCM] calling sendEachForMulticast', {
+        uid,
+        nid,
+        tokenCount: tokens.length,
+      });
       response = await getMessaging().sendEachForMulticast(message);
     } catch (err) {
       // eslint-disable-next-line no-console
-      console.error('[Gifted] FCM sendEachForMulticast error', err);
+      console.error('[Gifted FCM] sendEachForMulticast threw', {
+        uid,
+        nid,
+        name: err?.name,
+        message: err?.message,
+        code: err?.code,
+        stack: err?.stack,
+      });
       return;
+    }
+
+    const successCount = response.successCount;
+    const failureCount = response.failureCount;
+    const perTokenResults = response.responses.map((r, i) => ({
+      index: i,
+      docId: tokenDocs[i]?.id,
+      tokenUsed: tokens[i] ?? '(index mismatch)',
+      success: r.success,
+      errorCode: r.error?.code ?? null,
+      errorMessage: r.error?.message ?? null,
+    }));
+
+    // eslint-disable-next-line no-console
+    console.log('[Gifted FCM] sendEachForMulticast finished', {
+      uid,
+      nid,
+      successCount,
+      failureCount,
+      perTokenResults,
+    });
+
+    if (failureCount > 0) {
+      // eslint-disable-next-line no-console
+      console.error('[Gifted FCM] one or more sends failed', { uid, nid, perTokenResults });
     }
 
     // Remove any tokens the browser has invalidated (user cleared site data,
@@ -165,6 +269,8 @@ exports.onNotificationCreated = onDocumentCreated(
     });
 
     if (staleIds.length) {
+      // eslint-disable-next-line no-console
+      console.log('[Gifted FCM] deleting stale token docs', { uid, nid, staleDocIds: staleIds });
       const batch = db.batch();
       staleIds.forEach((id) => {
         batch.delete(db.doc(`users/${uid}/fcmTokens/${id}`));

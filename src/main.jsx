@@ -7,8 +7,10 @@ import './index.css';
 import App from './App.jsx';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { listenInstallPrompt } from './lib/installPrompt.js';
+import { startForegroundFcmListener } from './lib/messagingForeground.js';
 
 listenInstallPrompt();
+startForegroundFcmListener();
 
 // PWA: the service worker auto-updates in the background; reload prompt is
 // intentionally left soft — the page picks up the new SW on next navigation.

@@ -7,11 +7,13 @@ import { sendDealMessage } from '../../lib/deals.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { timeAgo } from '../../lib/format.js';
 
-export default function MessageThread({ dealId }) {
+export default function MessageThread({ dealId, embedded = false, onMarkRead }) {
   const { user, canEngage } = useAuth();
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
   const scrollRef = useRef(null);
+  /** Fingerprint of snapshot so we do not call onMarkRead when nothing meaningful changed. */
+  const lastReadFingerprintRef = useRef(null);
 
   const msgsQuery = useMemo(
     () => query(
@@ -24,10 +26,33 @@ export default function MessageThread({ dealId }) {
   const messages = snap?.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [];
 
   useEffect(() => {
+    lastReadFingerprintRef.current = null;
+  }, [dealId]);
+
+  useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages.length]);
+
+  // Clears global DM unread when parent passes onMarkRead (Deal detail or panel).
+  // Depends on `snap`, not `messages`, because `messages` is a new array every render and would loop.
+  useEffect(() => {
+    if (!onMarkRead || !dealId || !user?.uid) return;
+    const docs = snap?.docs ?? [];
+    let latestOther = 0;
+    for (const d of docs) {
+      const data = d.data();
+      if (data.senderId && data.senderId !== user.uid) {
+        latestOther = Math.max(latestOther, data.createdAt?.toMillis?.() ?? 0);
+      }
+    }
+    const fp = `${docs.length}:${latestOther}`;
+    if (lastReadFingerprintRef.current === fp) return;
+    lastReadFingerprintRef.current = fp;
+    const at = latestOther > 0 ? latestOther : Date.now();
+    onMarkRead(dealId, at);
+  }, [onMarkRead, dealId, user?.uid, snap]);
 
   const send = async (e) => {
     e.preventDefault();
@@ -42,10 +67,18 @@ export default function MessageThread({ dealId }) {
   };
 
   return (
-    <div className="card flex flex-col">
+    <div
+      className={clsx(
+        'card flex flex-col',
+        embedded && 'flex-1 min-h-0 border-0 shadow-none',
+      )}
+    >
       <div
         ref={scrollRef}
-        className="p-3 space-y-2 max-h-80 overflow-y-auto"
+        className={clsx(
+          'p-3 space-y-2 overflow-y-auto',
+          embedded ? 'flex-1 min-h-0 max-h-none' : 'max-h-80',
+        )}
       >
         {messages.length === 0 ? (
           <p className="text-xs text-ink-muted text-center py-6">

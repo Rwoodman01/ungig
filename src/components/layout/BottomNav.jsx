@@ -8,17 +8,11 @@ const HomeIcon = (p) => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M3 11l9-8 9 8M5 10v10h14V10" />
   </svg>
 );
-const BrowseIcon = (p) => (
+const BulletinIcon = (p) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
-    <circle cx="11" cy="11" r="7" />
-    <path strokeLinecap="round" d="M20 20l-3.5-3.5" />
-  </svg>
-);
-const GiveIcon = (p) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...p}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v12M6 12h12" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M7 6c0 2 2 3 5 3 0-2-1-5-3-5-1 0-2 1-2 2z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M17 6c0 2-2 3-5 3 0-2 1-5 3-5 1 0 2 1 2 2z" />
+    <rect x="5" y="4" width="14" height="17" rx="2" />
+    <path strokeLinecap="round" d="M9 4v2h6V4" />
+    <path strokeLinecap="round" d="M9 10h6M9 14h6M9 18h4" />
   </svg>
 );
 const InboxIcon = (p) => (
@@ -52,24 +46,24 @@ function Item({ to, label, Icon, end }) {
   );
 }
 
-function GiveFab() {
+/** Centre raised control — Giff avatar, opens Browse (member discovery). */
+function BrowseCentreFab() {
   return (
     <NavLink
-      to="/browse?intent=give"
+      to="/browse"
       className={({ isActive }) =>
         clsx(
           'flex-1 flex items-center justify-center',
           isActive ? 'opacity-100' : 'opacity-100',
         )
       }
-      aria-label="Give"
+      aria-label="Browse members"
     >
-      <div className="fab-give">
+      <div className="fab-give overflow-hidden p-0.5">
         <img
           src="/giff/face.png"
           alt=""
-          className="h-7 w-7"
-          style={{ filter: 'brightness(0) invert(1)' }}
+          className="h-full w-full rounded-full object-cover"
         />
       </div>
     </NavLink>
@@ -84,8 +78,8 @@ export default function BottomNav() {
     >
       <div className="max-w-app mx-auto flex">
         <Item to="/" end label="Home" Icon={HomeIcon} />
-        <Item to="/browse" label="Browse" Icon={BrowseIcon} />
-        <GiveFab />
+        <Item to="/bulletin" label="Bulletin" Icon={BulletinIcon} />
+        <BrowseCentreFab />
         <Item to="/deals" label="Inbox" Icon={InboxIcon} />
         <Item to="/me" label="Profile" Icon={ProfileIcon} />
       </div>

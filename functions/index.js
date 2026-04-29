@@ -244,9 +244,10 @@ exports.onDealForScoreWritten = onDocumentWritten(
 
     // Set proposalFirstResponseAt exactly once: first time a deal leaves 'requested'.
     const leftRequested =
-      before?.status === 'requested'
+      (before?.status === 'requested' || before?.status === 'proposed')
       && after.status
       && after.status !== 'requested'
+      && after.status !== 'proposed'
       && !after.proposalFirstResponseAt;
 
     if (leftRequested) {

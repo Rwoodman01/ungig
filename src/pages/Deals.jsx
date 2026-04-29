@@ -13,6 +13,10 @@ import { DEAL_STATUS } from '../lib/constants.js';
 import { timeAgo } from '../lib/format.js';
 
 const STATUS_LABEL = {
+  [DEAL_STATUS.PROPOSED]: 'Proposed',
+  [DEAL_STATUS.REVIEW]: 'In review',
+  [DEAL_STATUS.COUNTERED]: 'Countered',
+  [DEAL_STATUS.CONFIRMING]: 'Confirming',
   [DEAL_STATUS.REQUESTED]: 'Requested',
   [DEAL_STATUS.ACCEPTED]: 'Accepted',
   [DEAL_STATUS.SCHEDULED]: 'Scheduled',

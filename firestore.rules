@@ -175,7 +175,7 @@ service cloud.firestore {
       allow read: if isParticipant() || isAdmin();
       allow create: if willBeParticipant()
         && request.resource.data.initiatorId == request.auth.uid
-        && request.resource.data.status == 'requested';
+        && request.resource.data.status in ['requested', 'proposed'];
       allow update: if isParticipant() || isAdmin();
       allow delete: if isAdmin();
 

@@ -1,11 +1,13 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Wordmark from '../brand/Wordmark.jsx';
 import NotificationBell from '../notifications/NotificationBell.jsx';
+import { useMessagesPanel } from '../../contexts/MessagesPanelContext.jsx';
 
 export default function TopBar({ title, showBack = false }) {
   const location = useLocation();
   const navigate = useNavigate();
   const atRoot = location.pathname === '/';
+  const { openPanel, notepadUnread } = useMessagesPanel();
 
   return (
     <header
@@ -34,17 +36,24 @@ export default function TopBar({ title, showBack = false }) {
             <Wordmark size="md" withTagline={false} />
           )}
         </Link>
-        <Link
-          to="/bulletin"
-          aria-label="Bulletin board"
-          className="p-2 rounded-full text-ink-secondary hover:bg-cream"
+        <button
+          type="button"
+          onClick={openPanel}
+          aria-label={notepadUnread ? 'Messages, unread' : 'Messages'}
+          className="relative p-2 rounded-full text-ink-secondary hover:bg-cream"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <rect x="5" y="4" width="14" height="17" rx="2" />
             <path strokeLinecap="round" d="M9 4v2h6V4" />
             <path strokeLinecap="round" d="M9 10h6M9 14h6M9 18h4" />
           </svg>
-        </Link>
+          {notepadUnread ? (
+            <span
+              className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-green ring-2 ring-surface"
+              aria-hidden
+            />
+          ) : null}
+        </button>
         <NotificationBell />
       </div>
     </header>

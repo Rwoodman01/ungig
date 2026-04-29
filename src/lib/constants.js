@@ -31,12 +31,17 @@ export const MEMBER_STATUS = Object.freeze({
 });
 
 export const DEAL_STATUS = Object.freeze({
-  REQUESTED: 'requested',
-  ACCEPTED: 'accepted',
+  PROPOSED: 'proposed',
+  REVIEW: 'review',
+  COUNTERED: 'countered',
+  CONFIRMING: 'confirming',
   SCHEDULED: 'scheduled',
   COMPLETED: 'completed',
   REVIEWED: 'reviewed',
   DECLINED: 'declined',
+  /** @deprecated Legacy — still read from older documents */
+  REQUESTED: 'requested',
+  ACCEPTED: 'accepted',
 });
 
 export const MATCH_STATUS = Object.freeze({
@@ -98,6 +103,7 @@ export const BADGE_META = {
 export const NOTIFICATION_TYPES = Object.freeze({
   TRADE_PROPOSED: 'trade_proposed',
   TRADE_ACCEPTED: 'trade_accepted',
+  TRADE_SCHEDULE_SET: 'trade_schedule_set',
   TRADE_COMPLETED: 'trade_completed',
   REVIEW_RECEIVED: 'review_received',
   REVIEW_REMINDER: 'review_reminder',
@@ -178,6 +184,11 @@ export function getNotificationCopy(type, payload = {}) {
     case NOTIFICATION_TYPES.TRADE_ACCEPTED:
       return {
         message: `${name} accepted your exchange.`,
+        link: dealId ? `/deals/${dealId}` : '/deals',
+      };
+    case NOTIFICATION_TYPES.TRADE_SCHEDULE_SET:
+      return {
+        message: `${name} saved a meet time for your exchange.`,
         link: dealId ? `/deals/${dealId}` : '/deals',
       };
     case NOTIFICATION_TYPES.TRADE_COMPLETED:

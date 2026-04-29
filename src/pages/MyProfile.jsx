@@ -2,8 +2,16 @@
 // the onboarding ProfileSetup component's state shape. For MVP we offer a
 // subset of edits inline; full re-edit deep-links to a dedicated page.
 
-import { useState } from 'react';
-import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  deleteField,
+  doc,
+  GeoPoint,
+  getDoc,
+  serverTimestamp,
+  updateDoc,
+} from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
@@ -14,12 +22,57 @@ import PhotoGrid from '../components/photos/PhotoGrid.jsx';
 import ProfilePhotoUploader from '../components/photos/ProfilePhotoUploader.jsx';
 import PortfolioPhotoManager from '../components/photos/PortfolioPhotoManager.jsx';
 import GiftedScoreBreakdown from '../components/profile/GiftedScoreBreakdown.jsx';
+import LocationPlacesField from '../components/geo/LocationPlacesField.jsx';
+import MaxDistanceSlider from '../components/profile/MaxDistanceSlider.jsx';
 import { formatDate } from '../lib/format.js';
 import { LIMITS, MEMBER_STATUS } from '../lib/constants.js';
+import { MAX_DISTANCE_MILES_OPTIONS, DEFAULT_MAX_DISTANCE_MILES } from '../lib/constantsGeo.js';
+import { getLocationDisplayName, initialLocationFromUserDoc } from '../lib/geo.js';
+import { useBlockMuteLists } from '../hooks/useBlockMuteLists.js';
+import { unblockMember, unmuteMember } from '../lib/blockMute.js';
+
+const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '';
+
+function maxDistanceLabel(userDoc) {
+  if (!userDoc || !Object.prototype.hasOwnProperty.call(userDoc, 'maxDistanceMiles')) {
+    return '25 miles';
+  }
+  if (userDoc.maxDistanceMiles === null) return 'Anywhere';
+  const n = Number(userDoc.maxDistanceMiles);
+  const opt = MAX_DISTANCE_MILES_OPTIONS.find((o) => o.miles === n);
+  return opt?.label ?? `${n} miles`;
+}
 
 export default function MyProfile() {
   const { user, userDoc, signOutUser } = useAuth();
   const [editing, setEditing] = useState(false);
+  const { blockedByMeIds, mutedIds } = useBlockMuteLists(user?.uid);
+  const blockedArr = useMemo(() => [...blockedByMeIds], [blockedByMeIds]);
+  const mutedArr = useMemo(() => [...mutedIds], [mutedIds]);
+  const [memberLabels, setMemberLabels] = useState({});
+
+  const locName = useMemo(() => getLocationDisplayName(userDoc), [userDoc]);
+
+  useEffect(() => {
+    const ids = [...new Set([...blockedArr, ...mutedArr])];
+    if (!ids.length) return undefined;
+    let cancelled = false;
+    (async () => {
+      const next = {};
+      for (const id of ids) {
+        try {
+          const s = await getDoc(doc(db, 'users', id));
+          next[id] = s.exists() ? (s.data()?.displayName ?? 'Member') : 'Member';
+        } catch {
+          next[id] = 'Member';
+        }
+      }
+      if (!cancelled) {
+        setMemberLabels((prev) => ({ ...prev, ...next }));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [blockedArr, mutedArr]);
 
   if (!userDoc) return null;
 
@@ -35,9 +88,12 @@ export default function MyProfile() {
           <h1 className="text-xl font-display font-bold text-ink-primary truncate">
             {userDoc.displayName}
           </h1>
-          {userDoc.location ? (
-            <p className="text-sm text-ink-muted">{userDoc.location}</p>
+          {locName ? (
+            <p className="text-sm text-ink-muted">{locName}</p>
           ) : null}
+          <p className="text-xs text-ink-muted mt-1">
+            Match within <strong className="text-ink-primary">{maxDistanceLabel(userDoc)}</strong>
+          </p>
           <p className="text-xs text-ink-muted mt-1">
             Member since {formatDate(userDoc.memberSince)}
           </p>
@@ -55,6 +111,58 @@ export default function MyProfile() {
       </div>
 
       <GiftedScoreBreakdown uid={user.uid} publicScore={userDoc.giftedScore ?? 50} />
+
+      {(blockedArr.length > 0 || mutedArr.length > 0) ? (
+        <section className="card p-4 space-y-4">
+          <h2 className="text-sm font-semibold text-ink-primary">Blocked &amp; muted</h2>
+          {blockedArr.length > 0 ? (
+            <div>
+              <h3 className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-2">
+                Blocked members
+              </h3>
+              <ul className="space-y-2">
+                {blockedArr.map((id) => (
+                  <li key={id} className="flex items-center justify-between gap-2 text-sm">
+                    <Link to={`/members/${id}`} className="text-ink-primary truncate font-medium">
+                      {memberLabels[id] ?? '…'}
+                    </Link>
+                    <button
+                      type="button"
+                      className="btn-ghost text-xs shrink-0"
+                      onClick={() => unblockMember({ blockerUid: user.uid, blockedUid: id })}
+                    >
+                      Unblock
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {mutedArr.length > 0 ? (
+            <div>
+              <h3 className="text-xs font-medium text-ink-muted uppercase tracking-wide mb-2">
+                Muted (no DM notifications from them)
+              </h3>
+              <ul className="space-y-2">
+                {mutedArr.map((id) => (
+                  <li key={id} className="flex items-center justify-between gap-2 text-sm">
+                    <Link to={`/members/${id}`} className="text-ink-primary truncate font-medium">
+                      {memberLabels[id] ?? '…'}
+                    </Link>
+                    <button
+                      type="button"
+                      className="btn-ghost text-xs shrink-0"
+                      onClick={() => unmuteMember({ uid: user.uid, mutedUid: id })}
+                    >
+                      Unmute
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       {userDoc.bio ? (
         <p className="text-sm text-ink-secondary leading-relaxed">{userDoc.bio}</p>
@@ -111,7 +219,13 @@ export default function MyProfile() {
 function EditProfileInline({ userDoc, uid, onDone }) {
   const [displayName, setDisplayName] = useState(userDoc.displayName ?? '');
   const [bio, setBio] = useState(userDoc.bio ?? '');
-  const [location, setLocation] = useState(userDoc.location ?? '');
+  const [location, setLocation] = useState(() => initialLocationFromUserDoc(userDoc));
+  const [maxDistanceMiles, setMaxDistanceMiles] = useState(() => {
+    if (userDoc && Object.prototype.hasOwnProperty.call(userDoc, 'maxDistanceMiles')) {
+      return userDoc.maxDistanceMiles;
+    }
+    return DEFAULT_MAX_DISTANCE_MILES;
+  });
   const [photoURL, setPhotoURL] = useState(userDoc.photoURL ?? '');
   const [profilePhotoPath, setProfilePhotoPath] = useState(userDoc.profilePhotoPath ?? '');
   const [portfolioPhotos, setPortfolioPhotos] = useState(userDoc.portfolioPhotos ?? []);
@@ -119,21 +233,41 @@ function EditProfileInline({ userDoc, uid, onDone }) {
   const [needs, setNeeds] = useState(userDoc.servicesNeeded ?? []);
   const [busy, setBusy] = useState(false);
 
+  const locationOk = useMemo(() => {
+    if (!location.name?.trim()) return false;
+    if (MAPS_KEY) {
+      return location.lat != null && location.lng != null
+        && Number.isFinite(location.lat) && Number.isFinite(location.lng);
+    }
+    return true;
+  }, [location]);
+
   const save = async (e) => {
     e.preventDefault();
+    if (!locationOk) return;
     setBusy(true);
     try {
-      await updateDoc(doc(db, 'users', uid), {
+      const name = location.name.trim();
+      const lat = location.lat;
+      const lng = location.lng;
+      const patch = {
         displayName: displayName.trim(),
         bio: bio.trim().slice(0, LIMITS.BIO_MAX),
-        location: location.trim(),
+        location: { name, lat, lng },
+        maxDistanceMiles: maxDistanceMiles === null ? null : Number(maxDistanceMiles),
         photoURL,
         profilePhotoPath,
         portfolioPhotos,
         talentsOffered: talents,
         servicesNeeded: needs,
         updatedAt: serverTimestamp(),
-      });
+      };
+      if (lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng)) {
+        patch.coordinates = new GeoPoint(lat, lng);
+      } else {
+        patch.coordinates = deleteField();
+      }
+      await updateDoc(doc(db, 'users', uid), patch);
       onDone();
     } finally {
       setBusy(false);
@@ -167,10 +301,17 @@ function EditProfileInline({ userDoc, uid, onDone }) {
           onChange={(e) => setBio(e.target.value.slice(0, LIMITS.BIO_MAX))}
         />
       </div>
-      <div>
-        <label className="text-sm font-medium text-ink-secondary mb-1 block">Location</label>
-        <input className="input" value={location} onChange={(e) => setLocation(e.target.value)} />
-      </div>
+      <LocationPlacesField
+        id="edit-profile-location"
+        value={location}
+        onChange={setLocation}
+        disabled={busy}
+      />
+      <MaxDistanceSlider
+        value={maxDistanceMiles}
+        onChange={setMaxDistanceMiles}
+        disabled={busy}
+      />
       <TagInput value={talents} onChange={setTalents} max={LIMITS.TALENTS_MAX} label="Talents I offer" />
       <TagInput value={needs} onChange={setNeeds} max={LIMITS.SERVICES_MAX} label="Services I need" />
       <PortfolioPhotoManager
@@ -181,7 +322,7 @@ function EditProfileInline({ userDoc, uid, onDone }) {
       />
       <div className="grid grid-cols-2 gap-2">
         <button type="button" onClick={onDone} className="btn-secondary">Cancel</button>
-        <button className="btn-primary" disabled={busy}>
+        <button className="btn-primary" disabled={busy || !locationOk}>
           {busy ? 'Saving...' : 'Save'}
         </button>
       </div>

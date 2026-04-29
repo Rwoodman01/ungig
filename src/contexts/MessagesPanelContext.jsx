@@ -8,6 +8,7 @@ import {
 import { useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext.jsx';
 import { useDealDmUnread } from '../hooks/useDealDmUnread.js';
+import { useBlockMuteLists } from '../hooks/useBlockMuteLists.js';
 
 const MessagesPanelContext = createContext(null);
 
@@ -24,7 +25,8 @@ export function MessagesPanelProvider({ children }) {
   const { user } = useAuth();
   const uid = user?.uid ?? null;
   const dealThreadId = useDealThreadIdFromRoute();
-  const { hasUnreadDm, hasUnreadForDeal, markDealRead, deals } = useDealDmUnread(uid);
+  const { hiddenMemberIds } = useBlockMuteLists(uid);
+  const { hasUnreadDm, hasUnreadForDeal, markDealRead, deals } = useDealDmUnread(uid, hiddenMemberIds);
   const [open, setOpen] = useState(false);
 
   const openPanel = useCallback(() => setOpen(true), []);
@@ -43,6 +45,7 @@ export function MessagesPanelProvider({ children }) {
       dealThreadId,
       markDealRead,
       deals,
+      hiddenMemberIds,
     }),
     [
       open,
@@ -54,6 +57,7 @@ export function MessagesPanelProvider({ children }) {
       dealThreadId,
       markDealRead,
       deals,
+      hiddenMemberIds,
     ],
   );
 

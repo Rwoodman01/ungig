@@ -16,7 +16,10 @@ import Spinner from '../components/ui/Spinner.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { isVisibleInMemberBrowse } from '../lib/memberBrowseVisibility.js';
+import { getLocationDisplayName } from '../lib/geo.js';
+import { filterSortBrowseListMembers } from '../lib/matching.js';
 import { useSwipeDeck } from '../hooks/useSwipeDeck.js';
+import { useBlockMuteLists } from '../hooks/useBlockMuteLists.js';
 import { useMatches } from '../hooks/useMatches.js';
 import SwipeDeck from '../components/swipe/SwipeDeck.jsx';
 import MatchCelebrationModal from '../components/swipe/MatchCelebrationModal.jsx';
@@ -24,6 +27,7 @@ import MatchCelebrationModal from '../components/swipe/MatchCelebrationModal.jsx
 function MemberCard({ member }) {
   const cover = member.portfolioPhotos?.[0]?.url ?? member.proofPhotos?.[0] ?? '';
   const score = member.giftedScore ?? 50;
+  const place = getLocationDisplayName(member);
   return (
     <Link
       to={`/members/${member.id}`}
@@ -46,8 +50,11 @@ function MemberCard({ member }) {
             ) : null}
             <GiftedScoreBadge score={score} />
           </div>
-          {member.location ? (
-            <div className="text-xs text-ink-300 truncate">{member.location}</div>
+          {place ? (
+            <div className="text-xs text-ink-300 truncate">{place}</div>
+          ) : null}
+          {member.distanceLabel ? (
+            <div className="text-xs text-green font-medium mt-0.5">{member.distanceLabel}</div>
           ) : null}
           {member.talentsOffered?.length ? (
             <div className="mt-2 flex flex-wrap gap-1">
@@ -91,8 +98,9 @@ export default function Directory() {
     loading: deckLoading,
     error: deckError,
     recordDecision,
-  } = useSwipeDeck({ user, userDoc, locationFilter: loc });
+  } = useSwipeDeck({ user, userDoc, locationFilter: '' });
   const { matches } = useMatches(user?.uid);
+  const { hiddenMemberIds } = useBlockMuteLists(user?.uid);
 
   useEffect(() => {
     if (!pendingMatchTarget) return;
@@ -120,7 +128,13 @@ export default function Directory() {
     const norm = (s) => s.trim().toLowerCase();
     const textMatch = (m) => {
       if (!q) return true;
-      const hay = [m.displayName, m.bio, m.location, ...(m.talentsOffered ?? []), ...(m.servicesNeeded ?? [])]
+      const hay = [
+        m.displayName,
+        m.bio,
+        getLocationDisplayName(m),
+        ...(m.talentsOffered ?? []),
+        ...(m.servicesNeeded ?? []),
+      ]
         .filter(Boolean).join(' ').toLowerCase();
       return hay.includes(norm(q));
     };
@@ -128,11 +142,12 @@ export default function Directory() {
       !offered || (m.talentsOffered ?? []).some((t) => t.includes(norm(offered)));
     const neededMatch = (m) =>
       !needed || (m.servicesNeeded ?? []).some((t) => t.includes(norm(needed)));
-    const locMatch = (m) =>
-      !loc || (m.location ?? '').toLowerCase().includes(norm(loc));
 
-    return rows.filter((m) => textMatch(m) && offeredMatch(m) && neededMatch(m) && locMatch(m));
-  }, [snap, q, offered, needed, loc, user?.uid]);
+    const base = rows
+      .filter((m) => !hiddenMemberIds.has(m.id))
+      .filter((m) => textMatch(m) && offeredMatch(m) && neededMatch(m));
+    return filterSortBrowseListMembers(base, userDoc ?? {}, { locationSubstring: loc });
+  }, [snap, q, offered, needed, loc, user?.uid, userDoc, hiddenMemberIds]);
 
   return (
     <div className="space-y-4">
@@ -173,12 +188,9 @@ export default function Directory() {
 
       {view === 'swipe' ? (
         <>
-          <input
-            className="input"
-            placeholder="Prioritize location (optional)"
-            value={loc}
-            onChange={(e) => setLoc(e.target.value)}
-          />
+          <p className="text-xs text-ink-muted">
+            Distance and sorting use your saved location and max distance (Me → Edit profile).
+          </p>
           {deckLoading ? <Spinner /> : null}
           {deckError ? (
             <p className="text-coral text-sm">Error loading deck: {deckError.message}</p>

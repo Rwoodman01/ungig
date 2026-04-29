@@ -11,6 +11,7 @@ import LockedPosting from '../components/bulletin/LockedPosting.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useBulletinPosts } from '../hooks/useBulletinPosts.js';
 import { canUserPost, normalizeLocation } from '../lib/bulletin.js';
+import { getLocationDisplayName } from '../lib/geo.js';
 import { POST_TYPES } from '../lib/constants.js';
 
 const TYPE_TABS = [
@@ -23,8 +24,8 @@ const TYPE_TABS = [
 export default function Bulletin() {
   const { userDoc } = useAuth();
   const myKey = useMemo(
-    () => normalizeLocation(userDoc?.location ?? ''),
-    [userDoc?.location],
+    () => normalizeLocation(getLocationDisplayName(userDoc ?? {})),
+    [userDoc],
   );
   const [showAllAreas, setShowAllAreas] = useState(!myKey);
   const [typeFilter, setTypeFilter] = useState('');
@@ -61,7 +62,7 @@ export default function Bulletin() {
         <div className="text-xs text-ink-secondary">
           {showAllAreas
             ? 'Showing posts from all areas'
-            : `Showing posts in ${userDoc?.location || 'your area'}`}
+            : `Showing posts in ${getLocationDisplayName(userDoc ?? {}) || 'your area'}`}
         </div>
         <button
           type="button"

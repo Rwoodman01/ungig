@@ -40,6 +40,12 @@ export default function AdminHome() {
             Review flagged bulletin posts.
           </div>
         </Link>
+        <Link to="/admin/reports" className="card p-4 hover:border-green/40 transition">
+          <div className="font-semibold text-ink-primary">Member reports</div>
+          <div className="text-xs text-ink-muted mt-1">
+            Review safety reports from members (newest first).
+          </div>
+        </Link>
       </div>
     </div>
   );

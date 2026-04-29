@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Avatar from '../ui/Avatar.jsx';
+import { getLocationDisplayName } from '../../lib/geo.js';
 import { createDealFromMatch } from '../../lib/matches.js';
 import { getFitReason, getMemberCover } from '../../lib/matching.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
@@ -9,15 +10,19 @@ export default function MatchCard({ match }) {
   const navigate = useNavigate();
   const { user, userDoc } = useAuth();
   const [busy, setBusy] = useState(false);
+  const [proposeError, setProposeError] = useState('');
   const other = match.other;
   const cover = getMemberCover(other);
 
   const propose = async () => {
     if (!user || !other) return;
     setBusy(true);
+    setProposeError('');
     try {
       const dealId = await createDealFromMatch({ match, initiatorId: user.uid });
       navigate(`/deals/${dealId}`);
+    } catch (e) {
+      setProposeError(e?.message ?? 'Could not start an exchange.');
     } finally {
       setBusy(false);
     }
@@ -44,10 +49,15 @@ export default function MatchCard({ match }) {
           <Avatar src={other.photoURL} name={other.displayName} size="sm" />
           <div className="min-w-0">
             <h2 className="font-semibold text-ink-primary truncate">{other.displayName || 'Member'}</h2>
-            {other.location ? <p className="text-xs text-ink-muted truncate">{other.location}</p> : null}
+            {getLocationDisplayName(other) ? (
+              <p className="text-xs text-ink-muted truncate">{getLocationDisplayName(other)}</p>
+            ) : null}
           </div>
         </div>
         <p className="text-sm text-ink-secondary">{getFitReason({ member: other, userDoc })}</p>
+        {proposeError ? (
+          <p className="text-xs text-coral">{proposeError}</p>
+        ) : null}
         <button
           type="button"
           className="btn-primary w-full"

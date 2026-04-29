@@ -30,6 +30,8 @@ import {
   submitTradeOffer,
 } from '../lib/deals.js';
 import { getExchangeUiStep } from '../lib/exchangeFlow.js';
+import { getLocationDisplayName } from '../lib/geo.js';
+import { useBlockMuteLists } from '../hooks/useBlockMuteLists.js';
 
 export default function DealDetail() {
   const { dealId } = useParams();
@@ -41,6 +43,7 @@ export default function DealDetail() {
     firstPendingDealId,
   } = useAuth();
   const { markDealRead } = useMessagesPanel();
+  const { hiddenMemberIds } = useBlockMuteLists(user?.uid);
   const [dealSnap, loading, error] = useDocument(doc(db, 'deals', dealId));
   const [other, setOther] = useState(null);
   const [actionBusy, setActionBusy] = useState('');
@@ -98,6 +101,7 @@ export default function DealDetail() {
 
   const otherName = other?.displayName ?? 'the other member';
   const myName = userDoc?.displayName ?? user?.displayName ?? 'You';
+  const exchangeLocked = Boolean(other?.id && hiddenMemberIds.has(other.id));
 
   const renderStep = () => {
     if (!ui) return null;
@@ -206,6 +210,12 @@ export default function DealDetail() {
         <h1 className="text-xl font-display font-bold text-ink-primary">Exchange</h1>
       </div>
 
+      {exchangeLocked ? (
+        <div className="rounded-2xl border border-coral/30 bg-coral/5 p-4 text-sm text-ink-secondary">
+          {"A block is active between you — new messages won't be delivered. Unblock from Me if you placed the block."}
+        </div>
+      ) : null}
+
       {other ? (
         <div className="card p-3 flex items-center gap-3 shrink-0">
           <Avatar src={other.photoURL} name={other.displayName} size="sm" />
@@ -213,8 +223,8 @@ export default function DealDetail() {
             <div className="text-sm font-medium text-ink-primary truncate">
               {other.displayName}
             </div>
-            {other.location ? (
-              <div className="text-xs text-ink-muted truncate">{other.location}</div>
+            {getLocationDisplayName(other) ? (
+              <div className="text-xs text-ink-muted truncate">{getLocationDisplayName(other)}</div>
             ) : null}
           </div>
         </div>

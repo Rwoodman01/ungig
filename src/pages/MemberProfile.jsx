@@ -21,9 +21,17 @@ import PhotoGrid from '../components/photos/PhotoGrid.jsx';
 import CompletedWorkSection from '../components/photos/CompletedWorkSection.jsx';
 import GiftedScoreDisplay from '../components/ui/GiftedScoreDisplay.jsx';
 import { formatDate } from '../lib/format.js';
+import {
+  formatDistanceMilesLabel,
+  getLocationDisplayName,
+  getUserLatLng,
+  haversineMiles,
+} from '../lib/geo.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { createDeal } from '../lib/deals.js';
 import { aggregateReviewStats, countStaleReviewQueueItems } from '../lib/reviewStats.js';
+import { useBlockMuteLists } from '../hooks/useBlockMuteLists.js';
+import MemberProfileMenu from '../components/members/MemberProfileMenu.jsx';
 
 function sortReviewsDesc(reviews) {
   return [...reviews].sort((a, b) => {
@@ -38,10 +46,12 @@ export default function MemberProfile() {
   const navigate = useNavigate();
   const {
     user,
+    userDoc,
     canEngage,
     hasPendingReviews,
     firstPendingDealId,
   } = useAuth();
+  const { blockedByMeIds, hiddenMemberIds, mutedIds } = useBlockMuteLists(user?.uid);
   const [memberSnap, loading] = useDocument(doc(db, 'users', memberId));
 
   const reviewsQuery = useMemo(
@@ -64,6 +74,13 @@ export default function MemberProfile() {
   const member = { id: memberSnap.id, ...memberSnap.data() };
   const giftedScore = member.giftedScore ?? 50;
   const isSelf = user?.uid === member.id;
+  const myCoords = user && userDoc ? getUserLatLng(userDoc) : null;
+  const theirCoords = getUserLatLng(member);
+  const distanceMiles =
+    myCoords && theirCoords
+      ? haversineMiles(myCoords.lat, myCoords.lng, theirCoords.lat, theirCoords.lng)
+      : null;
+  const distanceLabel = formatDistanceMilesLabel(distanceMiles);
   const rawReviews = reviewsSnap?.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [];
   const visibleReviews = rawReviews.filter((r) => r.visibleAt != null && r.moderationStatus !== 'removed');
   const reviews = sortReviewsDesc(visibleReviews);
@@ -77,36 +94,70 @@ export default function MemberProfile() {
 
   const requestTrade = async () => {
     if (!user || isSelf) return;
-    const dealId = await createDeal({ initiatorId: user.uid, receiverId: member.id });
-    navigate(`/deals/${dealId}`);
+    try {
+      const dealId = await createDeal({ initiatorId: user.uid, receiverId: member.id });
+      navigate(`/deals/${dealId}`);
+    } catch (e) {
+      window.alert(e?.message ?? 'Could not start an exchange.');
+    }
   };
 
   const firstName = member.displayName?.split(/\s+/)[0] ?? 'this member';
+  const pairHidden = !isSelf && user && hiddenMemberIds.has(member.id);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start gap-3">
         <Avatar src={member.photoURL} name={member.displayName} size="xl" />
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-display font-bold text-ink-primary truncate">
-            {member.displayName}
-          </h1>
-          {member.location ? (
-            <p className="text-sm text-ink-muted">{member.location}</p>
-          ) : null}
-          <p className="text-xs text-ink-muted mt-1">
-            Member since {formatDate(member.memberSince)}
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <div className="flex gap-3 text-xs text-ink-secondary">
-              <span><strong className="text-green">{member.tradeCount ?? 0}</strong> gifts</span>
-              <span><strong className="text-green">{member.badges?.length ?? 0}</strong> badges</span>
+        <div className="flex-1 min-w-0 flex items-start gap-2">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-display font-bold text-ink-primary truncate">
+              {member.displayName}
+            </h1>
+            {getLocationDisplayName(member) ? (
+              <p className="text-sm text-ink-muted">{getLocationDisplayName(member)}</p>
+            ) : null}
+            {!isSelf ? (
+              <p className="text-sm text-green font-medium mt-0.5">{distanceLabel}</p>
+            ) : null}
+            <p className="text-xs text-ink-muted mt-1">
+              Member since {formatDate(member.memberSince)}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <div className="flex gap-3 text-xs text-ink-secondary">
+                <span><strong className="text-green">{member.tradeCount ?? 0}</strong> gifts</span>
+                <span><strong className="text-green">{member.badges?.length ?? 0}</strong> badges</span>
+              </div>
+              <GiftedScoreDisplay score={giftedScore} className="ml-auto" />
+              <UnreviewedFlag count={staleUnreviewed} />
             </div>
-            <GiftedScoreDisplay score={giftedScore} className="ml-auto" />
-            <UnreviewedFlag count={staleUnreviewed} />
           </div>
+          {!isSelf && user?.uid ? (
+            <MemberProfileMenu
+              myUid={user.uid}
+              memberId={member.id}
+              memberName={firstName}
+              blockedByMeIds={blockedByMeIds}
+              mutedIds={mutedIds}
+              onBlocked={() => navigate('/browse')}
+            />
+          ) : null}
         </div>
       </div>
+
+      {pairHidden ? (
+        <div className="rounded-2xl border border-coral/30 bg-coral/5 p-4 text-sm text-ink-secondary">
+          {blockedByMeIds.has(member.id) ? (
+            <>
+              You blocked this member. Unblock anytime from{' '}
+              <Link to="/me" className="text-green font-semibold underline">Me</Link>
+              {' '}→ Blocked members.
+            </>
+          ) : (
+            <>{"You can't message or start exchanges with this member."}</>
+          )}
+        </div>
+      ) : null}
 
       <ReviewWarningBanner unreviewedCount={staleUnreviewed} />
 
@@ -177,6 +228,11 @@ export default function MemberProfile() {
         <Link to="/me" className="btn-secondary w-full">
           Edit your profile
         </Link>
+      ) : pairHidden ? (
+        <LockedAction>
+          <strong className="text-green">Propose Trade</strong>
+          {" isn't available for this member."}
+        </LockedAction>
       ) : canEngage && hasPendingReviews ? (
         <LockedAction>
           <strong className="text-green">Propose Trade</strong>

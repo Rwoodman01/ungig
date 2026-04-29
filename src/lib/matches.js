@@ -6,6 +6,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase.js';
 import { createDeal } from './deals.js';
+import { isPairBlocked } from './blockMute.js';
 
 export function matchIdFor(a, b) {
   return [a, b].sort().join('_');
@@ -17,6 +18,9 @@ export async function recordSwipe({ uid, targetUid, direction, source = 'swipe' 
   }
   if (!['left', 'right'].includes(direction)) {
     throw new Error('Invalid swipe direction.');
+  }
+  if (await isPairBlocked(uid, targetUid)) {
+    throw new Error('You can\'t swipe on this member right now.');
   }
   await setDoc(doc(db, 'users', uid, 'swipes', targetUid), {
     targetUid,

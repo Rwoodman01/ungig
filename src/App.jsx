@@ -39,6 +39,7 @@ import AllDeals from './pages/admin/AllDeals.jsx';
 import AllMembers from './pages/admin/AllMembers.jsx';
 import AdminReviews from './pages/admin/Reviews.jsx';
 import AdminBulletin from './pages/admin/Bulletin.jsx';
+import AdminReports from './pages/admin/Reports.jsx';
 
 import { useAuth } from './contexts/AuthContext.jsx';
 import Spinner from './components/ui/Spinner.jsx';
@@ -104,6 +105,7 @@ export default function App() {
                   <Route path="/admin/members" element={<AllMembers />} />
                   <Route path="/admin/reviews" element={<AdminReviews />} />
                   <Route path="/admin/bulletin" element={<AdminBulletin />} />
+                  <Route path="/admin/reports" element={<AdminReports />} />
                 </Route>
               </Route>
             </Route>

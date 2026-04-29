@@ -36,6 +36,17 @@ function matchIdFor(a, b) {
   return [a, b].sort().join('_');
 }
 
+async function pairBlocked(a, b) {
+  if (!a || !b || a === b) return false;
+  const [p1, p2, p3, p4] = await Promise.all([
+    db.doc(`users/${a}/blocks/${b}`).get(),
+    db.doc(`users/${a}/blockedBy/${b}`).get(),
+    db.doc(`users/${b}/blocks/${a}`).get(),
+    db.doc(`users/${b}/blockedBy/${a}`).get(),
+  ]);
+  return p1.exists || p2.exists || p3.exists || p4.exists;
+}
+
 async function getDisplayName(uid) {
   const snap = await db.doc(`users/${uid}`).get();
   return snap.exists ? (snap.data().displayName || 'Someone') : 'Someone';
@@ -64,6 +75,8 @@ exports.onSwipeWritten = onDocumentWritten('users/{uid}/swipes/{targetUid}', asy
 
   const reciprocalSnap = await db.doc(`users/${targetUid}/swipes/${uid}`).get();
   if (!reciprocalSnap.exists || reciprocalSnap.data().direction !== 'right') return;
+
+  if (await pairBlocked(uid, targetUid)) return;
 
   const matchId = matchIdFor(uid, targetUid);
   const matchRef = db.doc(`matches/${matchId}`);

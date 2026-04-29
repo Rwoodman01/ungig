@@ -115,6 +115,24 @@ export const NOTIFICATION_TYPES = Object.freeze({
   MATCH: 'match',
   BADGE_EARNED: 'badge_earned',
   POST_INTEREST: 'post_interest',
+  REPORT_SUBMITTED: 'report_submitted',
+});
+
+/** Stored on `reports/{id}.reason` — keep in sync with Firestore rules. */
+export const REPORT_REASONS = Object.freeze({
+  HARASSMENT: 'harassment',
+  FAKE_PROFILE: 'fake_profile',
+  ABUSIVE_BEHAVIOUR: 'abusive_behaviour',
+  OTHER: 'other',
+});
+
+export const REPORT_REASON_VALUES = Object.freeze(Object.values(REPORT_REASONS));
+
+export const REPORT_REASON_LABELS = Object.freeze({
+  [REPORT_REASONS.HARASSMENT]: 'Harassment',
+  [REPORT_REASONS.FAKE_PROFILE]: 'Fake profile',
+  [REPORT_REASONS.ABUSIVE_BEHAVIOUR]: 'Abusive behaviour',
+  [REPORT_REASONS.OTHER]: 'Other',
 });
 
 // Bulletin board.
@@ -252,6 +270,11 @@ export function getNotificationCopy(type, payload = {}) {
         link: payload.postId ? `/bulletin/${payload.postId}` : '/bulletin',
       };
     }
+    case NOTIFICATION_TYPES.REPORT_SUBMITTED:
+      return {
+        message: 'Thanks — we received your report and will review it.',
+        link: '/me',
+      };
     default:
       return { message: 'You have a new notification.', link: '/' };
   }

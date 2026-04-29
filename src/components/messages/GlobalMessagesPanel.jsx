@@ -30,6 +30,7 @@ export default function GlobalMessagesPanel() {
     deals,
     markDealRead,
     dealThreadId,
+    hiddenMemberIds,
   } = useMessagesPanel();
   const [view, setView] = useState('list');
   const [activeDealId, setActiveDealId] = useState(null);
@@ -37,10 +38,15 @@ export default function GlobalMessagesPanel() {
   const [namesById, setNamesById] = useState({});
   const [dealPanelOtherName, setDealPanelOtherName] = useState('Member');
 
-  const rows = useMemo(
-    () => (uid ? groupConnections(deals, uid) : []),
-    [deals, uid],
-  );
+  const rows = useMemo(() => {
+    const raw = uid ? groupConnections(deals, uid) : [];
+    return raw.filter((r) => !hiddenMemberIds.has(r.otherId));
+  }, [deals, uid, hiddenMemberIds]);
+
+  const threadDeal = dealThreadId ? deals.find((x) => x.id === dealThreadId) : null;
+  const threadOtherId = threadDeal?.participantIds?.find((id) => id !== uid);
+  const threadMessagingLocked = Boolean(threadOtherId && hiddenMemberIds.has(threadOtherId));
+  const activeMessagingLocked = Boolean(activeOtherId && hiddenMemberIds.has(activeOtherId));
 
   useEffect(() => {
     if (!open) {
@@ -153,6 +159,7 @@ export default function GlobalMessagesPanel() {
             <MessageThread
               dealId={dealThreadId}
               embedded
+              messagingLocked={threadMessagingLocked}
               onMarkRead={handleMarkRead}
             />
           </div>
@@ -248,6 +255,7 @@ export default function GlobalMessagesPanel() {
                 <MessageThread
                   dealId={activeDealId}
                   embedded
+                  messagingLocked={activeMessagingLocked}
                   onMarkRead={handleMarkRead}
                 />
               ) : null}

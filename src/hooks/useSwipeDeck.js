@@ -6,8 +6,10 @@ import { MEMBER_STATUS } from '../lib/constants.js';
 import { recordSwipe, swipesCollection } from '../lib/matches.js';
 import { sortDeckMembers } from '../lib/matching.js';
 import { isVisibleInMemberBrowse } from '../lib/memberBrowseVisibility.js';
+import { useBlockMuteLists } from './useBlockMuteLists.js';
 
 export function useSwipeDeck({ user, userDoc, locationFilter = '' }) {
+  const { hiddenMemberIds } = useBlockMuteLists(user?.uid);
   const membersQuery = useMemo(
     () => query(
       collection(db, 'users'),
@@ -31,8 +33,9 @@ export function useSwipeDeck({ user, userDoc, locationFilter = '' }) {
 
   const members = useMemo(
     () => (membersSnap?.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [])
-      .filter(isVisibleInMemberBrowse),
-    [membersSnap],
+      .filter(isVisibleInMemberBrowse)
+      .filter((m) => !hiddenMemberIds.has(m.id)),
+    [membersSnap, hiddenMemberIds],
   );
 
   const { primary, recycled } = useMemo(

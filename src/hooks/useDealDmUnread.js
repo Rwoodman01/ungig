@@ -35,7 +35,7 @@ function saveReadMap(map) {
  * Tracks latest incoming (other party) message time per deal and compares to
  * per-deal read timestamps in localStorage for a global DM unread dot.
  */
-export function useDealDmUnread(uid) {
+export function useDealDmUnread(uid, hiddenMemberIds) {
   const [readMap, setReadMap] = useState(loadReadMap);
   const [latestIncomingByDeal, setLatestIncomingByDeal] = useState({});
 
@@ -49,10 +49,14 @@ export function useDealDmUnread(uid) {
   }, [uid]);
 
   const [dealsSnap] = useCollection(dealsQuery);
-  const deals = useMemo(
-    () => (dealsSnap?.docs ?? []).map((d) => ({ id: d.id, ...d.data() })),
-    [dealsSnap],
-  );
+  const deals = useMemo(() => {
+    const raw = (dealsSnap?.docs ?? []).map((d) => ({ id: d.id, ...d.data() }));
+    if (!uid || !hiddenMemberIds || hiddenMemberIds.size === 0) return raw;
+    return raw.filter((d) => {
+      const other = d.participantIds?.find((id) => id !== uid);
+      return other && !hiddenMemberIds.has(other);
+    });
+  }, [dealsSnap, uid, hiddenMemberIds]);
   const dealIds = useMemo(() => deals.map((d) => d.id), [deals]);
 
   useEffect(() => {

@@ -1,3 +1,11 @@
+import {
+  formatDistanceMilesLabel,
+  getEffectiveMaxDistanceMiles,
+  getLocationDisplayName,
+  getUserLatLng,
+  haversineMiles,
+} from './geo.js';
+
 function normalize(value) {
   return String(value ?? '').trim().toLowerCase();
 }
@@ -35,8 +43,9 @@ export function scoreMemberForDeck({ member, userDoc, swipedMap = {}, locationFi
   const oneWay = theirNeedsMatchMyOffers || theirOffersMatchMyNeeds;
   const hasPortfolio = (member.portfolioPhotos?.length ?? 0) > 0 || (member.proofPhotos?.length ?? 0) > 0;
   const hasTrust = (member.tradeCount ?? 0) > 0 || (member.badges?.length ?? 0) > 0;
-  const filter = normalize(locationFilter || userDoc?.location);
-  const local = filter && normalize(member.location).includes(filter);
+  const filter = normalize(locationFilter || getLocationDisplayName(userDoc));
+  const memberLocStr = getLocationDisplayName(member);
+  const local = filter && normalize(memberLocStr).includes(filter);
   const alreadySwiped = Boolean(swipedMap[member.id]);
 
   let score = 0;
@@ -61,21 +70,100 @@ export function scoreMemberForDeck({ member, userDoc, swipedMap = {}, locationFi
   };
 }
 
+function passesMaxDistance({ distanceMiles, maxMi, myCoords, theirCoords }) {
+  if (maxMi === Infinity) return true;
+  if (!myCoords) return true;
+  if (!theirCoords || distanceMiles == null) return false;
+  return distanceMiles <= maxMi;
+}
+
+function sortByGiftedThenDeck(a, b) {
+  const ga = a.giftedScore ?? 50;
+  const gb = b.giftedScore ?? 50;
+  if (gb !== ga) return gb - ga;
+  return b.deckMeta.score - a.deckMeta.score;
+}
+
 export function sortDeckMembers({ members = [], userDoc, swipes = [], locationFilter = '' }) {
   const swipedMap = Object.fromEntries(swipes.map((s) => [s.targetUid ?? s.id, s]));
+  const myCoords = getUserLatLng(userDoc);
+  const maxMi = getEffectiveMaxDistanceMiles(userDoc);
+
   const enriched = members
     .filter((m) => m.id !== userDoc?.uid)
-    .map((member) => ({
-      ...member,
-      deckMeta: scoreMemberForDeck({ member, userDoc, swipedMap, locationFilter }),
-    }));
+    .map((member) => {
+      const theirCoords = getUserLatLng(member);
+      let distanceMiles = null;
+      if (myCoords && theirCoords) {
+        distanceMiles = haversineMiles(
+          myCoords.lat,
+          myCoords.lng,
+          theirCoords.lat,
+          theirCoords.lng,
+        );
+      }
+      return {
+        ...member,
+        distanceMiles,
+        distanceLabel: formatDistanceMilesLabel(distanceMiles),
+        deckMeta: scoreMemberForDeck({ member, userDoc, swipedMap, locationFilter }),
+      };
+    })
+    .filter((m) =>
+      passesMaxDistance({
+        distanceMiles: m.distanceMiles,
+        maxMi,
+        myCoords,
+        theirCoords: getUserLatLng(m),
+      }));
 
   const primary = enriched
     .filter((m) => !m.deckMeta.alreadySwiped)
-    .sort((a, b) => b.deckMeta.score - a.deckMeta.score);
+    .sort(sortByGiftedThenDeck);
   const recycled = enriched
     .filter((m) => m.deckMeta.alreadySwiped)
-    .sort((a, b) => b.deckMeta.score - a.deckMeta.score);
+    .sort(sortByGiftedThenDeck);
 
   return { primary, recycled };
+}
+
+/** Browse list: same geo filter + Gifted Score sort (includes already-swiped members). */
+export function filterSortBrowseListMembers(members, userDoc, { locationSubstring = '' } = {}) {
+  const myCoords = getUserLatLng(userDoc);
+  const maxMi = getEffectiveMaxDistanceMiles(userDoc);
+  const locSub = normalize(locationSubstring);
+
+  const enriched = members
+    .filter((m) => m.id !== userDoc?.uid)
+    .map((member) => {
+      const theirCoords = getUserLatLng(member);
+      let distanceMiles = null;
+      if (myCoords && theirCoords) {
+        distanceMiles = haversineMiles(
+          myCoords.lat,
+          myCoords.lng,
+          theirCoords.lat,
+          theirCoords.lng,
+        );
+      }
+      return {
+        ...member,
+        distanceMiles,
+        distanceLabel: formatDistanceMilesLabel(distanceMiles),
+        deckMeta: scoreMemberForDeck({ member, userDoc, swipedMap: {}, locationFilter: '' }),
+      };
+    })
+    .filter((m) =>
+      passesMaxDistance({
+        distanceMiles: m.distanceMiles,
+        maxMi,
+        myCoords,
+        theirCoords: getUserLatLng(m),
+      }))
+    .filter((m) => {
+      if (!locSub) return true;
+      return normalize(getLocationDisplayName(m)).includes(locSub);
+    });
+
+  return [...enriched].sort(sortByGiftedThenDeck);
 }

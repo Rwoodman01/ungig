@@ -61,6 +61,7 @@ function initialUserDoc(user) {
     badges: [],
     tradeCount: 0,
     giftedScore: 50,
+    maxDistanceMiles: 25,
     connections: [],
     referredBy: null,
     role: isAdminEmail(user.email) ? 'admin' : 'member',

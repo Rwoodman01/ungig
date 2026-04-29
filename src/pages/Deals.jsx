@@ -1,12 +1,15 @@
 // "Exchanges" tab — every deal the current user is part of.
 // Relies on denormalized `participantIds` for a single array-contains query.
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import {
+  useEffect, useMemo, useState, useCallback,
+} from 'react';
 import { Link } from 'react-router-dom';
 import { collection, doc, getDoc, orderBy, query, where } from 'firebase/firestore';
 import { useCollection } from 'react-firebase-hooks/firestore';
 import { db } from '../firebase.js';
 import { useAuth } from '../contexts/AuthContext.jsx';
+import { useBlockMuteLists } from '../hooks/useBlockMuteLists.js';
 import Spinner from '../components/ui/Spinner.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import SwipeableDealRow from '../components/deals/SwipeableDealRow.jsx';
@@ -35,6 +38,7 @@ const DELETABLE_STATUSES = new Set([
 
 export default function Deals() {
   const { user } = useAuth();
+  const { hiddenMemberIds } = useBlockMuteLists(user?.uid);
   const [namesById, setNamesById] = useState({});
   const [dealToDelete, setDealToDelete] = useState(null);
   const [removeError, setRemoveError] = useState(null);
@@ -54,9 +58,14 @@ export default function Deals() {
   );
   const [snap, loading, error] = useCollection(q);
 
-  const deals = uid && snap
-    ? (snap.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [])
-    : [];
+  const deals = useMemo(() => {
+    if (!uid || !snap) return [];
+    return (snap.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [])
+      .filter((d) => {
+        const other = d.participantIds?.find((id) => id !== uid);
+        return other && !hiddenMemberIds.has(other);
+      });
+  }, [uid, snap, hiddenMemberIds]);
 
   useEffect(() => {
     let cancelled = false;

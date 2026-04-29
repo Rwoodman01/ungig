@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 import PostForm from '../components/bulletin/PostForm.jsx';
 import LockedPosting from '../components/bulletin/LockedPosting.jsx';
 import { canUserPost, createPost } from '../lib/bulletin.js';
+import { getLocationDisplayName } from '../lib/geo.js';
 
 export default function BulletinNew() {
   const { user, userDoc } = useAuth();
@@ -48,7 +49,7 @@ export default function BulletinNew() {
         </p>
       </div>
       <PostForm
-        initialLocation={userDoc.location ?? ''}
+        initialLocation={getLocationDisplayName(userDoc)}
         busy={busy}
         error={error}
         onSubmit={handleSubmit}

@@ -7,7 +7,7 @@ import { sendDealMessage } from '../../lib/deals.js';
 import { useAuth } from '../../contexts/AuthContext.jsx';
 import { timeAgo } from '../../lib/format.js';
 
-export default function MessageThread({ dealId, embedded = false, onMarkRead }) {
+export default function MessageThread({ dealId, embedded = false, onMarkRead, messagingLocked = false }) {
   const { user, canEngage } = useAuth();
   const [draft, setDraft] = useState('');
   const [sending, setSending] = useState(false);
@@ -107,7 +107,11 @@ export default function MessageThread({ dealId, embedded = false, onMarkRead }) 
           );
         })}
       </div>
-      {canEngage ? (
+      {messagingLocked ? (
+        <div className="p-3 border-t border-border text-center text-xs text-ink-muted">
+          {"Messaging isn't available for this exchange."}
+        </div>
+      ) : canEngage ? (
         <form onSubmit={send} className="flex gap-2 p-2 border-t border-border">
           <input
             className="input flex-1"

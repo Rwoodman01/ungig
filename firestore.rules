@@ -23,6 +23,7 @@ service cloud.firestore {
     function selfUpdatableFields() {
       return [
         'displayName', 'email', 'photoURL', 'bio', 'location',
+        'coordinates', 'maxDistanceMiles',
         'profilePhotoPath', 'portfolioPhotos',
         'talentsOffered', 'servicesNeeded', 'proofPhotos',
         'welcomeSeen',
@@ -68,6 +69,23 @@ service cloud.firestore {
     function isParticipantOfDeal(dealId) {
       return isSignedIn()
         && request.auth.uid in dealParticipants(dealId);
+    }
+
+    /** True if either user has blocked the other (four mirror paths). */
+    function pairBlockedUsers(a, b) {
+      return a is string && b is string && a.size() > 0 && b.size() > 0 && a != b
+        && (
+          exists(/databases/$(database)/documents/users/$(a)/blocks/$(b))
+          || exists(/databases/$(database)/documents/users/$(a)/blockedBy/$(b))
+          || exists(/databases/$(database)/documents/users/$(b)/blocks/$(a))
+          || exists(/databases/$(database)/documents/users/$(b)/blockedBy/$(a))
+        );
+    }
+
+    function dealMessageParticipantsBlocked(dealId, senderId) {
+      let ds = get(/databases/$(database)/documents/deals/$(dealId)).data;
+      let other = senderId == ds.initiatorId ? ds.receiverId : ds.initiatorId;
+      return pairBlockedUsers(senderId, other);
     }
 
     match /users/{uid} {
@@ -128,7 +146,8 @@ service cloud.firestore {
           && request.resource.data.type is string
           && request.resource.data.message is string
           && request.resource.data.link is string
-          && request.resource.data.readAt == null;
+          && request.resource.data.readAt == null
+          && !pairBlockedUsers(request.resource.data.fromUid, uid);
         allow update: if isSelf(uid)
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readAt']);
         allow delete: if isSelf(uid) || isAdmin();
@@ -138,10 +157,35 @@ service cloud.firestore {
         allow read: if isSelf(uid) || isAdmin();
         allow create, update: if isSelf(uid)
           && targetUid != uid
+          && !pairBlockedUsers(uid, targetUid)
           && request.resource.data.targetUid == targetUid
           && request.resource.data.direction in ['left', 'right']
           && request.resource.data.source in ['swipe', 'button'];
         allow delete: if isSelf(uid) || isAdmin();
+      }
+
+      match /blocks/{blockedUid} {
+        allow read, delete: if isSelf(uid);
+        allow create: if isSelf(uid)
+          && blockedUid != uid
+          && request.resource.data.blockedUid == blockedUid
+          && request.resource.data.keys().hasOnly(['blockedUid', 'createdAt']);
+      }
+
+      match /blockedBy/{blockerId} {
+        allow read, delete: if isSelf(uid) || request.auth.uid == blockerId;
+        allow create: if request.auth.uid == blockerId
+          && blockerId != uid
+          && request.resource.data.blockerId == blockerId
+          && request.resource.data.keys().hasOnly(['blockerId', 'createdAt']);
+      }
+
+      match /mutes/{mutedUid} {
+        allow read, delete: if isSelf(uid);
+        allow create, update: if isSelf(uid)
+          && mutedUid != uid
+          && request.resource.data.mutedUid == mutedUid
+          && request.resource.data.keys().hasOnly(['mutedUid', 'createdAt']);
       }
 
       match /fcmTokens/{tokenId} {
@@ -188,7 +232,11 @@ service cloud.firestore {
       allow read: if isParticipant() || isAdmin();
       allow create: if willBeParticipant()
         && request.resource.data.initiatorId == request.auth.uid
-        && request.resource.data.status in ['requested', 'proposed'];
+        && request.resource.data.status in ['requested', 'proposed']
+        && !pairBlockedUsers(
+          request.resource.data.initiatorId,
+          request.resource.data.receiverId
+        );
       allow update: if isParticipant() || isAdmin();
       allow delete: if isAdmin() || participantMayDeleteDeal();
 
@@ -198,7 +246,8 @@ service cloud.firestore {
           || isAdmin();
         allow create: if isSignedIn()
           && request.resource.data.senderId == request.auth.uid
-          && request.auth.uid in get(/databases/$(database)/documents/deals/$(dealId)).data.participantIds;
+          && request.auth.uid in get(/databases/$(database)/documents/deals/$(dealId)).data.participantIds
+          && !dealMessageParticipantsBlocked(dealId, request.auth.uid);
         allow update: if false;
         allow delete: if isAdmin() || participantMayDeleteDealSubdoc();
       }
@@ -357,6 +406,21 @@ service cloud.firestore {
           && request.resource.data.uid == uid;
         allow update, delete: if false;
       }
+    }
+
+    match /reports/{reportId} {
+      allow create: if isSignedIn()
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.reportedUserId is string
+        && request.resource.data.reportedUserId != request.auth.uid
+        && request.resource.data.reason in ['harassment', 'fake_profile', 'abusive_behaviour', 'other']
+        && request.resource.data.details is string
+        && request.resource.data.details.size() <= 2000
+        && request.resource.data.status == 'open'
+        && request.resource.data.keys().hasOnly([
+          'reporterId', 'reportedUserId', 'reason', 'details', 'status', 'createdAt',
+        ]);
+      allow read, update, delete: if isAdmin();
     }
   }
 }

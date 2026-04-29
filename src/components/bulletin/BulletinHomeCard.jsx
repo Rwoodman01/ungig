@@ -2,11 +2,12 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useBulletinPosts } from '../../hooks/useBulletinPosts.js';
 import { normalizeLocation } from '../../lib/bulletin.js';
+import { getLocationDisplayName } from '../../lib/geo.js';
 
 export default function BulletinHomeCard({ userDoc }) {
   const locationKey = useMemo(
-    () => normalizeLocation(userDoc?.location ?? ''),
-    [userDoc?.location],
+    () => normalizeLocation(getLocationDisplayName(userDoc ?? {})),
+    [userDoc],
   );
   // Reuses the same single-shape query the bulletin page uses, so we
   // depend on exactly one composite index (status ASC, createdAt DESC).

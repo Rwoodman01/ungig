@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { getLocationDisplayName } from '../../lib/geo.js';
 import { getMemberCover, hasOverlap } from '../../lib/matching.js';
 import GiffMatchIndicator from './GiffMatchIndicator.jsx';
 import GiftedScoreBadge from '../ui/GiftedScoreBadge.jsx';
@@ -15,6 +16,7 @@ function Stars({ rating = 0 }) {
 
 export default function SwipeCard({ member, userDoc, onTap, glow = '', recycled = false }) {
   const cover = getMemberCover(member);
+  const placeName = getLocationDisplayName(member);
   const needsMatch = hasOverlap(member.servicesNeeded, userDoc?.talentsOffered);
   const rating = member.reviewSummary?.average ?? 0;
   const giftedScore = member.giftedScore ?? 50;
@@ -49,8 +51,14 @@ export default function SwipeCard({ member, userDoc, onTap, glow = '', recycled 
             {member.displayName || 'Member'}
           </h2>
           <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-white/80">
-            {member.location ? <span>{member.location}</span> : null}
-            {member.location ? <span>•</span> : null}
+            {placeName ? <span>{placeName}</span> : null}
+            {placeName ? <span>•</span> : null}
+            {member.distanceLabel ? (
+              <>
+                <span className="text-white font-medium">{member.distanceLabel}</span>
+                <span>•</span>
+              </>
+            ) : null}
             <Stars rating={rating} />
             <span>•</span>
             <span>{member.tradeCount ?? 0} gifts</span>

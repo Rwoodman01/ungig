@@ -28,10 +28,14 @@ import { DEAL_STATUS } from './constants.js';
 import { computeBadgesAfterCompletion } from './badges.js';
 import { notify, NOTIFICATION_TYPES } from './notifications.js';
 import { setReviewQueueEntry } from './reviewQueue.js';
+import { isPairBlocked } from './blockMute.js';
 
 export async function createDeal({ initiatorId, receiverId }) {
   if (!initiatorId || !receiverId || initiatorId === receiverId) {
     throw new Error('Invalid trade participants.');
+  }
+  if (await isPairBlocked(initiatorId, receiverId)) {
+    throw new Error('You can\'t start an exchange with this member right now.');
   }
   const ref = await addDoc(collection(db, 'deals'), {
     initiatorId,

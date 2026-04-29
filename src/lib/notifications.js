@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from '../firebase.js';
 import { getNotificationCopy, NOTIFICATION_TYPES } from './constants.js';
+import { isPairBlocked, recipientHasMutedSender } from './blockMute.js';
 
 /**
  * @param {string} recipientId
@@ -19,12 +20,24 @@ import { getNotificationCopy, NOTIFICATION_TYPES } from './constants.js';
  * @param {{ notificationId?: string }} opts — stable id for idempotent writes (e.g. review reminder)
  */
 export async function notify(recipientId, type, payload = {}, opts = {}) {
+  const fromUid = auth.currentUser?.uid ?? '';
+  if (fromUid && recipientId && fromUid !== recipientId) {
+    if (await isPairBlocked(fromUid, recipientId)) {
+      return;
+    }
+    if (
+      type === NOTIFICATION_TYPES.NEW_MESSAGE
+      && (await recipientHasMutedSender(recipientId, fromUid))
+    ) {
+      return;
+    }
+  }
+
   const { message, link } = getNotificationCopy(type, payload);
   const notifRef = opts.notificationId
     ? doc(db, 'users', recipientId, 'notifications', opts.notificationId)
     : doc(collection(db, 'users', recipientId, 'notifications'));
 
-  const fromUid = auth.currentUser?.uid ?? '';
   await setDoc(notifRef, {
     type,
     message,

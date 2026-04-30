@@ -195,7 +195,8 @@ service cloud.firestore {
       }
 
       match /mutes/{mutedUid} {
-        allow read, delete: if isSelf(uid);
+        allow read: if isSelf(uid) || request.auth.uid == mutedUid;
+        allow delete: if isSelf(uid);
         allow create, update: if isSelf(uid)
           && mutedUid != uid
           && request.resource.data.mutedUid == mutedUid

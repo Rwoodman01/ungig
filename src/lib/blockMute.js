@@ -12,13 +12,15 @@ import { db } from '../firebase.js';
 
 export async function isPairBlocked(a, b) {
   if (!a || !b || a === b) return false;
-  const [ab1, ab2, ba1, ba2] = await Promise.all([
+  // From the signed-in user's perspective, these two docs are enough:
+  // - `blocks/{other}` means I blocked them.
+  // - `blockedBy/{other}` means they blocked me via the mirrored write.
+  // Reading the other user's private `blocks` doc is denied by rules.
+  const [blockedByMe, blockedMe] = await Promise.all([
     getDoc(doc(db, 'users', a, 'blocks', b)),
     getDoc(doc(db, 'users', a, 'blockedBy', b)),
-    getDoc(doc(db, 'users', b, 'blocks', a)),
-    getDoc(doc(db, 'users', b, 'blockedBy', a)),
   ]);
-  return ab1.exists() || ab2.exists() || ba1.exists() || ba2.exists();
+  return blockedByMe.exists() || blockedMe.exists();
 }
 
 export async function recipientHasMutedSender(recipientId, senderId) {

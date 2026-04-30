@@ -71,6 +71,13 @@ export default function DealDetail() {
     return () => { cancel = true; };
   }, [deal?.id, user?.uid]);
 
+  useEffect(() => {
+    if (!deal || !user?.uid) return;
+    if (deal.completedBy?.[user.uid] || deal.status === DEAL_STATUS.COMPLETED || deal.status === DEAL_STATUS.REVIEWED) {
+      setActionError('');
+    }
+  }, [deal?.completedBy, deal?.status, user?.uid]);
+
   const doAction = async (label, fn) => {
     setActionBusy(label);
     setActionError('');

@@ -46,17 +46,31 @@ service cloud.firestore {
             || resource.data.showInBrowse == true);
     }
 
+    function existingConnections() {
+      return ('connections' in resource.data && resource.data.connections is list)
+        ? resource.data.connections
+        : [];
+    }
+
+    function existingBadges() {
+      return ('badges' in resource.data && resource.data.badges is list)
+        ? resource.data.badges
+        : [];
+    }
+
     function isTradeCompletionBump(uid) {
       let a = request.resource.data;
       let b = resource.data;
       return a.diff(b).affectedKeys().hasOnly(['tradeCount', 'connections', 'badges', 'updatedAt'])
         && a.tradeCount == b.tradeCount + 1
-        && a.connections.size() == b.connections.size() + 1
-        && a.connections.hasAll(b.connections)
-        && a.badges.hasAll(b.badges)
+        && a.connections is list
+        && a.connections.size() >= existingConnections().size()
+        && a.connections.size() <= existingConnections().size() + 1
+        && a.connections.hasAll(existingConnections())
+        && a.badges is list
+        && a.badges.hasAll(existingBadges())
         && (
           (request.auth.uid != uid
-            && !b.connections.hasAny([request.auth.uid])
             && a.connections.hasAny([request.auth.uid]))
           || request.auth.uid == uid
         );

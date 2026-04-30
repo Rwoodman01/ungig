@@ -401,12 +401,19 @@ export async function markDealComplete(dealId, userId) {
   }
 
   if (postTx?.kind === 'partial' && postTx.otherId) {
-    const meSnap = await getDoc(doc(db, 'users', userId));
-    const myName = meSnap.data()?.displayName ?? 'Someone';
-    await notify(postTx.otherId, NOTIFICATION_TYPES.TRADE_MARK_COMPLETE_PENDING, {
-      otherName: myName,
-      dealId,
-    });
+    try {
+      const meSnap = await getDoc(doc(db, 'users', userId));
+      const myName = meSnap.data()?.displayName ?? 'Someone';
+      await notify(postTx.otherId, NOTIFICATION_TYPES.TRADE_MARK_COMPLETE_PENDING, {
+        otherName: myName,
+        dealId,
+      });
+    } catch (err) {
+      // Completion already succeeded. A notification permission/offline failure
+      // should not make the exchange look failed to the user.
+      // eslint-disable-next-line no-console
+      console.warn('[markDealComplete] completion nudge skipped', err);
+    }
     return;
   }
 
@@ -418,7 +425,7 @@ export async function markDealComplete(dealId, userId) {
     ]);
     const iName = iUser.data()?.displayName ?? 'Someone';
     const rName = rUser.data()?.displayName ?? 'Someone';
-    await Promise.all([
+    const sideEffects = await Promise.allSettled([
       setReviewQueueEntry(notifyPair.initiatorId, notifyPair.dealId),
       setReviewQueueEntry(notifyPair.receiverId, notifyPair.dealId),
       notify(notifyPair.initiatorId, NOTIFICATION_TYPES.TRADE_COMPLETED, {
@@ -430,6 +437,14 @@ export async function markDealComplete(dealId, userId) {
         dealId: notifyPair.dealId,
       }),
     ]);
+    const failed = sideEffects.filter((r) => r.status === 'rejected');
+    if (failed.length) {
+      // The deal/user transaction is the source of truth. Queue/notification
+      // writes are best-effort so a denied follow-up does not leave the user
+      // stuck on a false "missing permissions" message.
+      // eslint-disable-next-line no-console
+      console.warn('[markDealComplete] completion side effects skipped', failed);
+    }
   }
 }
 

@@ -48,7 +48,7 @@ export function useDealDmUnread(uid, hiddenMemberIds) {
     );
   }, [uid]);
 
-  const [dealsSnap] = useCollection(dealsQuery);
+  const [dealsSnap, dealsLoading, dealsError] = useCollection(dealsQuery);
   const deals = useMemo(() => {
     const raw = (dealsSnap?.docs ?? []).map((d) => ({ id: d.id, ...d.data() }));
     if (!uid || !hiddenMemberIds || hiddenMemberIds.size === 0) return raw;
@@ -128,5 +128,13 @@ export function useDealDmUnread(uid, hiddenMemberIds) {
     [latestIncomingByDeal, readMap],
   );
 
-  return { hasUnreadDm, hasUnreadForDeal, markDealRead, dealIds, deals };
+  return {
+    hasUnreadDm,
+    hasUnreadForDeal,
+    markDealRead,
+    dealIds,
+    deals,
+    dealsLoading,
+    dealsError,
+  };
 }

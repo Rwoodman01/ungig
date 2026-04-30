@@ -43,6 +43,7 @@ export default function LocationPlacesField({ value, onChange, disabled, id }) {
   const [predictions, setPredictions] = useState([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [mapsError, setMapsError] = useState('');
   /** Maps/Places library ready for suggestions (input stays enabled regardless). */
   const [mapsReady, setMapsReady] = useState(!API_KEY);
   const wrapRef = useRef(null);
@@ -67,8 +68,13 @@ export default function LocationPlacesField({ value, onChange, disabled, id }) {
         if (cancelled) return;
         placesLibRef.current = places;
         setMapsReady(true);
-      } catch {
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('[LocationPlacesField] Google Maps failed to load', err);
         if (!cancelled) setMapsReady(true);
+        if (!cancelled) {
+          setMapsError('Address search is unavailable. Check Maps JavaScript API, Places API (New), billing, and key restrictions.');
+        }
       }
     })();
     return () => { cancelled = true; };
@@ -105,6 +111,7 @@ export default function LocationPlacesField({ value, onChange, disabled, id }) {
       sessionTokenRef.current = new lib.AutocompleteSessionToken();
     }
     setLoading(true);
+    setMapsError('');
     try {
       const { suggestions } = await lib.AutocompleteSuggestion.fetchAutocompleteSuggestions({
         input: q.trim(),
@@ -112,7 +119,10 @@ export default function LocationPlacesField({ value, onChange, disabled, id }) {
       });
       const list = (suggestions ?? []).filter((s) => s.placePrediction);
       setPredictions(list);
-    } catch {
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[LocationPlacesField] Places autocomplete failed', err);
+      setMapsError('Address suggestions are blocked by Google. Check Places API (New), billing, and HTTP referrer restrictions.');
       setPredictions([]);
     } finally {
       setLoading(false);
@@ -138,7 +148,10 @@ export default function LocationPlacesField({ value, onChange, disabled, id }) {
         const name = (place.formattedAddress ?? display) || pp.text.toString();
         setInput(name);
         onChange({ name, lat, lng });
-      } catch {
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error('[LocationPlacesField] Place details failed', err);
+        setMapsError('Could not fetch place details. Check Places API (New), billing, and key restrictions.');
         onChange({
           name: pp.text.toString(),
           lat: null,
@@ -189,6 +202,7 @@ export default function LocationPlacesField({ value, onChange, disabled, id }) {
           Set <code className="text-ink-secondary">VITE_GOOGLE_MAPS_API_KEY</code> for Google Places suggestions.
         </p>
       ) : null}
+      {mapsError ? <p className="text-[11px] text-coral mt-1">{mapsError}</p> : null}
       {open && predictions.length > 0 ? (
         <ul
           className={clsx(

@@ -22,7 +22,7 @@ export default function MessageThread({ dealId, embedded = false, onMarkRead, me
     ),
     [dealId],
   );
-  const [snap] = useCollection(msgsQuery);
+  const [snap, loading, error] = useCollection(msgsQuery);
   const messages = snap?.docs.map((d) => ({ id: d.id, ...d.data() })) ?? [];
 
   useEffect(() => {
@@ -80,7 +80,13 @@ export default function MessageThread({ dealId, embedded = false, onMarkRead, me
           embedded ? 'flex-1 min-h-0 max-h-none' : 'max-h-80',
         )}
       >
-        {messages.length === 0 ? (
+        {loading ? (
+          <p className="text-xs text-ink-muted text-center py-6">Loading messages…</p>
+        ) : null}
+        {error ? (
+          <p className="text-xs text-coral text-center py-6">{error.message}</p>
+        ) : null}
+        {!loading && !error && messages.length === 0 ? (
           <p className="text-xs text-ink-muted text-center py-6">
             Start the conversation. Agree on what each of you will provide and
             pick a date.

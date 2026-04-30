@@ -26,7 +26,14 @@ export function MessagesPanelProvider({ children }) {
   const uid = user?.uid ?? null;
   const dealThreadId = useDealThreadIdFromRoute();
   const { hiddenMemberIds } = useBlockMuteLists(uid);
-  const { hasUnreadDm, hasUnreadForDeal, markDealRead, deals } = useDealDmUnread(uid, hiddenMemberIds);
+  const {
+    hasUnreadDm,
+    hasUnreadForDeal,
+    markDealRead,
+    deals,
+    dealsLoading,
+    dealsError,
+  } = useDealDmUnread(uid, hiddenMemberIds);
   const [open, setOpen] = useState(false);
 
   const openPanel = useCallback(() => setOpen(true), []);
@@ -45,6 +52,8 @@ export function MessagesPanelProvider({ children }) {
       dealThreadId,
       markDealRead,
       deals,
+      dealsLoading,
+      dealsError,
       hiddenMemberIds,
     }),
     [
@@ -57,6 +66,8 @@ export function MessagesPanelProvider({ children }) {
       dealThreadId,
       markDealRead,
       deals,
+      dealsLoading,
+      dealsError,
       hiddenMemberIds,
     ],
   );

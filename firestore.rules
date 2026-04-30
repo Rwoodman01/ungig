@@ -273,11 +273,7 @@ service cloud.firestore {
 
       allow read: if isAdmin()
         || (isSignedIn() && resource.data.reviewerId == request.auth.uid)
-        || (isSignedIn()
-            && resource.data.visibleAt != null
-            && (!('suppressed' in resource.data) || resource.data.suppressed == false)
-            && (!('moderationStatus' in resource.data)
-                || resource.data.moderationStatus != 'removed'));
+        || (isSignedIn() && resource.data.visibleAt != null);
 
       allow create: if isSignedIn()
         && request.resource.data.reviewerId == request.auth.uid

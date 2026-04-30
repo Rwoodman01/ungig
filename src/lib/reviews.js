@@ -4,6 +4,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  orderBy,
   query,
   runTransaction,
   serverTimestamp,
@@ -153,7 +154,12 @@ export async function submitReview({
 }
 
 async function fetchVisibleReviewsForReviewee(revieweeId) {
-  const q = query(collection(db, 'reviews'), where('revieweeId', '==', revieweeId));
+  const q = query(
+    collection(db, 'reviews'),
+    where('revieweeId', '==', revieweeId),
+    where('visibleAt', '!=', null),
+    orderBy('visibleAt', 'desc'),
+  );
   const snap = await getDocs(q);
   return snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))

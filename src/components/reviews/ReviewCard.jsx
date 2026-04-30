@@ -29,8 +29,12 @@ export default function ReviewCard({ review }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const snap = await getDoc(doc(db, 'users', review.reviewerId));
-      if (!cancelled && snap.exists()) setReviewer({ id: snap.id, ...snap.data() });
+      try {
+        const snap = await getDoc(doc(db, 'users', review.reviewerId));
+        if (!cancelled && snap.exists()) setReviewer({ id: snap.id, ...snap.data() });
+      } catch {
+        if (!cancelled) setReviewer(null);
+      }
     })();
     return () => { cancelled = true; };
   }, [review.reviewerId]);

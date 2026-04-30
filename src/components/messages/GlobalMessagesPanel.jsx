@@ -28,6 +28,8 @@ export default function GlobalMessagesPanel() {
     open,
     closePanel,
     deals,
+    dealsLoading,
+    dealsError,
     markDealRead,
     dealThreadId,
     hiddenMemberIds,
@@ -58,7 +60,6 @@ export default function GlobalMessagesPanel() {
 
   useEffect(() => {
     if (!open || !dealThreadId || !uid) return;
-    markDealRead(dealThreadId, Date.now());
     const d = deals.find((x) => x.id === dealThreadId);
     const otherId = d?.participantIds?.find((id) => id !== uid);
     if (!otherId) {
@@ -75,7 +76,7 @@ export default function GlobalMessagesPanel() {
         if (!cancelled) setDealPanelOtherName('Member');
       });
     return () => { cancelled = true; };
-  }, [open, dealThreadId, uid, deals, markDealRead]);
+  }, [open, dealThreadId, uid, deals]);
 
   useEffect(() => {
     const ids = rows.map((r) => r.otherId);
@@ -107,9 +108,8 @@ export default function GlobalMessagesPanel() {
       setActiveDealId(dealId);
       setActiveOtherId(otherId);
       setView('thread');
-      markDealRead(dealId, Date.now());
     },
-    [markDealRead],
+    [],
   );
 
   const handleMarkRead = useCallback(
@@ -127,7 +127,7 @@ export default function GlobalMessagesPanel() {
 
   if (!open) return null;
 
-  if (dealThreadId) {
+  if (dealThreadId && (dealsLoading || dealsError || threadDeal)) {
     return (
       <div className="fixed inset-0 z-[45] flex flex-col justify-end">
         <button
@@ -156,12 +156,18 @@ export default function GlobalMessagesPanel() {
             </button>
           </div>
           <div className="flex-1 min-h-0 flex flex-col px-2 pb-3 pt-2 overflow-hidden">
-            <MessageThread
-              dealId={dealThreadId}
-              embedded
-              messagingLocked={threadMessagingLocked}
-              onMarkRead={handleMarkRead}
-            />
+            {dealsLoading ? (
+              <p className="text-sm text-ink-muted text-center px-4 py-10">Loading messages…</p>
+            ) : dealsError ? (
+              <p className="text-sm text-coral text-center px-4 py-10">{dealsError.message}</p>
+            ) : (
+              <MessageThread
+                dealId={dealThreadId}
+                embedded
+                messagingLocked={threadMessagingLocked}
+                onMarkRead={handleMarkRead}
+              />
+            )}
           </div>
         </div>
       </div>

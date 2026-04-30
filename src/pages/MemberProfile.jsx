@@ -3,7 +3,13 @@
 
 import { useMemo } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { collection, doc, query, where } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  orderBy,
+  query,
+  where,
+} from 'firebase/firestore';
 import { useDocument, useCollection } from 'react-firebase-hooks/firestore';
 import { db } from '../firebase.js';
 import Avatar from '../components/ui/Avatar.jsx';
@@ -55,7 +61,12 @@ export default function MemberProfile() {
   const [memberSnap, loading] = useDocument(doc(db, 'users', memberId));
 
   const reviewsQuery = useMemo(
-    () => query(collection(db, 'reviews'), where('revieweeId', '==', memberId)),
+    () => query(
+      collection(db, 'reviews'),
+      where('revieweeId', '==', memberId),
+      where('visibleAt', '!=', null),
+      orderBy('visibleAt', 'desc'),
+    ),
     [memberId],
   );
   const [reviewsSnap] = useCollection(reviewsQuery);
